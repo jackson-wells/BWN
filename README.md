@@ -1,8 +1,8 @@
-#BAT
+#BAT#
 
-##**B**urrows-Wheeler transform **A**lignment **T**ool
+##**B**urrows-Wheeler transform **A**lignment **T**ool##
 
-###Biological Sequence Search using the Burrows-Wheeler Transform
+###Biological Sequence Search using the Burrows-Wheeler Transform###
 
 Current Version:
  - Index a single or multi-fasta file, or a string input
