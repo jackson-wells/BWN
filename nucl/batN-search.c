@@ -5,10 +5,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#include "bwp-search.h"
+#include "batN-search.h"
 
 int MAX_LINE_LENGTH = 10000000;
-#define INTERVAL_FILE "index.bwp"
+#define INTERVAL_FILE "index.batN"
 char OUTPUT_FILE[100];
 
 /* MEMORY ALLOCATION FUNCTIONS */
@@ -160,7 +160,7 @@ struct query manageInputs(char *argv[], int argc, int *sCount)
                 switch (c)
                 {
                         case 'h':
-                                printf("\nBurrows Wheeler Protein Alligner\n\nUsage: \"bwp <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta file\n-s\t\tFor input of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n\n");
+                                printf("\nBurrows Wheeler Protein Alligner\n\nUsage: \"batN-search <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta file\n-s\t\tFor input of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n\n");
                                 exit(0);
 
                         case 'f':

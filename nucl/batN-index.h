@@ -1,5 +1,5 @@
-#ifndef BWP_INDEX_H
-#define BWP_INDEX_H
+#ifndef BATN_INDEX_H
+#define BATN_INDEX_H
 
 struct suffix
 {

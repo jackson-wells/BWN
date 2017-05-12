@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include "bwp-index.h"
+#include "batN-index.h"
 #include <unistd.h>
 #include <math.h>
 
@@ -270,7 +270,7 @@ struct input_data manageInputs(int argc, char *argv[],int *sCount) /*handles ini
 	        switch (c)
 	        {
 	            	case 'h':
-	                	printf("\nBurrows Wheeler Protein Alligner\n\nUsage: \"bwp <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta file\n-s\t\tFor input of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tTo designate the output file name\n\n");
+	                	printf("\nBurrows Wheeler Protein Alligner\n\nUsage: \"batN-index <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta file\n-s\t\tFor input of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tTo designate the output file name\n\n");
 	                	exit(0);
 	
 	            	case 'f':
@@ -535,11 +535,11 @@ void intervalToFile(struct index *FMidx, int seqCount,struct suffix **m, char **
 	FILE *f;
 	if(strlen(OUTPUT_FILE) == 0) 
 	{
-		f = fopen("index.bwp","w");	
+		f = fopen("index.batN","w");	
 	}
 	else
 	{
-		strcat(OUTPUT_FILE,".bwp");
+		strcat(OUTPUT_FILE,".batN");
 		f = fopen(OUTPUT_FILE,"w");
 	}
 	/*write each instance of M to a file*/

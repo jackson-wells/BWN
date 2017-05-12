@@ -1,5 +1,5 @@
-#ifndef BWP_SEARCH_H
-#define BWP_SEARCH_H
+#ifndef BATN_SEARCH_H
+#define BATN_SEARCH_H
 
 struct index
 {
