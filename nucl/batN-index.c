@@ -20,7 +20,7 @@ void printSuffixArray(struct suffix **m,int seqCount, int *seqLength)
 		/*printf("\n%s\n",m[i][0].name);*/
 		for(j=0; j < seqLength[i]; j++)
 		{
-			printf("%d\t%s\n",m[i][j].pos,m[i][j].string);
+			printf("%d\t%d\t%s\n",j+1,m[i][j].pos,m[i][j].string);
 		}
 	}
 	printf("\n");
@@ -101,10 +101,12 @@ struct input_data initializeInputStruct( int seqCount, int *seqLength)
     	input.length = (int *) malloc(seqCount * sizeof(int));
     	input.name = (char **) malloc(seqCount * sizeof(char *));
 	input.sequence = (char **) malloc(seqCount * sizeof(char *));
+	input.reverse = (char **) malloc(seqCount * sizeof(char *));
 	for(i = 0; i < seqCount;i++)
 	{
 		input.name[i] = (char *) malloc(n*(sizeof(char)));
 	        input.sequence[i] = (char *) malloc(seqLength[i] * sizeof(char));
+		input.reverse[i] = (char *) malloc(seqLength[i] * sizeof(char));
 	}
     	return input;
 }
@@ -208,6 +210,7 @@ void read_fasta(char *fileName, struct input_data *input)
 {
     	int charCount = MAX_LINE_LENGTH;
     	char *temp = (char *) malloc(charCount * sizeof(char));
+	char *rev = (char *) malloc(charCount * sizeof(char));
     	FILE *file = fopen(fileName,"r");
     	int i = 0;
     	while(fgets(temp,charCount,file) != NULL)   /*loops through each line of a file*/
@@ -225,14 +228,16 @@ void read_fasta(char *fileName, struct input_data *input)
             	else    /*if line contains a nucleotide sequence*/
             	{
                     	strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
+			rev = reverse(temp,strlen(temp));
+			strcat(rev,"$");
                     	strcat(temp,"$");
                     	strcpy(input->sequence[i],temp);    /*saving string in memory*/
+			strcpy(input->reverse[i],rev);
                     	input->length[i] = strlen(temp);
                     	i++;
             	}
     	}
     	fclose(file);
-	/*free(temp);*/
 }
 
 /*  charToEnd
@@ -251,7 +256,18 @@ void charToEnd(char* input)	/*Takes in char* and puts the first character elemen
     	}
 }
 
-
+char* reverse(char *str,int length)
+{
+	char *temp = (char *) malloc(length*sizeof(char));
+	int i;
+	int idx = 0;
+	for(i = length-1; i > -1; i=i-1)
+	{
+		temp[idx] = str[i];
+		idx++;
+	}
+	return temp;
+}
 
 /* INPUT HANDLING FUNCTIONS */
 
@@ -313,9 +329,12 @@ void handleS(struct input_data *input, char *sequence)
     	int *seqLength = (int *) malloc(sizeof(int));
     	seqLength[0] = strlen(sequence) + 1;
     	int seqC = 1;
+	char *rev = reverse(sequence,strlen(sequence));
+	strcat(rev,"$");
     	strcat(sequence,"$");
     	*input = initializeInputStruct(seqC,seqLength);
     	input->length[0] = seqLength[0];
+	strcpy(input->reverse[0],rev);
     	strcpy(input->sequence[0],sequence);
     	strcpy(input->name[0],"Command Line String Input");
 }
@@ -346,6 +365,43 @@ struct suffix **buildSuffixArray(struct input_data input,int seqCount)
     		mergeSort(0,input.length[i]-1,m,i);
     	}
     	return m;
+}
+
+struct suffix **buildReverseSuffixArray(struct input_data input,int seqCount)
+{
+        /*intialize array*/
+        struct suffix **Rm = newSuffixArray(seqCount,input.length);
+        /*place sequences in respective areas of memory*/
+        populateReverseSuffixArray(Rm,input,seqCount);
+        /*sort*/
+        int i;
+        for(i = 0; i < seqCount; i++)
+        {
+                mergeSort(0,input.length[i]-1,Rm,i);
+        }
+        return Rm;
+}
+
+void populateReverseSuffixArray(struct suffix **m, struct input_data input, int seqCount)
+{
+        int i,j;
+        for(i = 0; i < seqCount; i++)
+        {
+                char *tempSeq = input.reverse[i];
+                for(j = 0; j < input.length[i]; j++)
+                {
+                        m[i][j].pos = j + 1;
+                        if(j == 0)
+                        {
+                                strcpy(m[i][j].string,tempSeq);
+                        }
+                        if(j > 0)
+                        {
+                                charToEnd(tempSeq);
+                                strcpy(m[i][j].string,tempSeq);
+                        }
+                }
+        }
 }
 
 void populateSuffixArray(struct suffix **m, struct input_data input, int seqCount)
@@ -458,17 +514,21 @@ char **bwt(struct suffix **m, int seqCount,int *seqLength)
 
 /* INTERVAL CALCULATION FUNCTIONS */
 
-struct index *calculateInterval(char **transform, int *seqLength,int seqCount)
+struct index *calculateInterval(char **transform, int *seqLength,int seqCount, char **revTransform)
 {
     	struct index *FMidx = (struct index *) malloc(seqCount * sizeof(struct index));
     	int i,j,z;
     	for(i = 0; i < seqCount; i++)
     	{
 		FMidx[i].O = (int **) malloc(5*sizeof(int **));
+		FMidx[i].R = (int **) malloc(5*sizeof(int **));
         	for(j = 0; j < 5; j++) //looping thru each char ($,A,C,G,T)
         	{
 			FMidx[i].O[j] = (int *) malloc(seqLength[i]*sizeof(int));
+			FMidx[i].R[j] = (int *) malloc(seqLength[i]*sizeof(int));
+			FMidx[i].R[j] = calculateO(revTransform[i],seqLength[i],j);
            		FMidx[i].O[j] = calculateO(transform[i],seqLength[i],j);
+			FMidx[i].C[5] = seqLength[i]-1;
 //			FMidx[i].C[j] = FMidx[i].O[j][seqLength[i]-1];
 			if(j == 0)
 			{
@@ -557,7 +617,7 @@ void intervalToFile(struct index *FMidx, int seqCount,struct suffix **m, char **
 		{
 			fprintf(f,"%d ",m[i][q].pos);
 		}
-                fprintf(f,"\nt:%s\nc:%d %d %d %d %d\n",transform[i],FMidx[i].C[0],FMidx[i].C[1],FMidx[i].C[2],FMidx[i].C[3],FMidx[i].C[4]);
+                fprintf(f,"\nt:%s\nc:%d %d %d %d %d %d\n",transform[i],FMidx[i].C[0],FMidx[i].C[1],FMidx[i].C[2],FMidx[i].C[3],FMidx[i].C[4],FMidx[i].C[5]);
                 for(j= 0; j < 5; j++)
                 {
 			fprintf(f,"o:");
@@ -567,7 +627,16 @@ void intervalToFile(struct index *FMidx, int seqCount,struct suffix **m, char **
                         }
                         fprintf(f,"\n");
                 }
-		fprintf(f,"\n");
+		for(j= 0; j < 5; j++)
+                {
+                        fprintf(f,"r:");
+                        for(z= 0; z < input.length[i]; z++)
+                        {
+                                fprintf(f,"%d ",FMidx[i].R[j][z]);
+                        }
+                        fprintf(f,"\n");
+                }
+                fprintf(f,"\n");
         }
 	fclose(f);
 }
@@ -580,11 +649,13 @@ int main(int argc, char *argv[])
 {
 	int seqCount = 0;	/*will contain # of sequences, is written by manageInputs()*/
 	struct input_data input = manageInputs(argc,argv,&seqCount);
-	struct suffix **m = buildSuffixArray(input,seqCount);/*= manageInputs(argc,argv,&seqCount);*/
+	struct suffix **m = buildSuffixArray(input,seqCount);
+	struct suffix **Rm = buildReverseSuffixArray(input,seqCount);
 	//printSuffixArray(m,seqCount,input.length);
 	char **transform = bwt(m,seqCount,input.length);	/*contains transforms of all input fastas*/
+	char **revTransform = bwt(Rm,seqCount,input.length);
 	//printBwt(m,transform,seqCount);
-	struct index *FMidx = calculateInterval(transform,input.length,seqCount);
+	struct index *FMidx = calculateInterval(transform,input.length,seqCount,revTransform);
 	//printInt(FMidx,seqCount,input.length);
 	intervalToFile(FMidx,seqCount,m,transform,input);
     	deleteSuffixArray(m,seqCount,input.length);

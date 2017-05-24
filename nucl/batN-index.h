@@ -3,23 +3,28 @@
 
 struct suffix
 {
-    int pos;
-    char *string;
+    	int pos;
+    	char *string;
 };
 
 struct input_data
 {
-    char **name;
-    int *length;
-    char **sequence;
+    	char **name;
+    	int *length;
+	char **sequence;
+	char **reverse;
 };
 
 struct index
 {
-    int **O;
-    int C[5];
+    	int **O;
+	int **R;
+    	int C[6];
 };
 
+struct suffix **buildReverseSuffixArray(struct input_data input,int seqCount);
+void populateReverseSuffixArray(struct suffix **m,struct input_data input,int seqCount);
+char *reverse(char *str,int length);
 int baseMap(char temp);
 int mostChars(char *fileName);
 void charToEnd(char *input);
@@ -42,7 +47,7 @@ void handleS(struct input_data *input, char *sequence);
 void handleF(struct input_data *input, char *fileName);
 void populateSuffixArray(struct suffix **m,struct input_data input,int seqCount);
 void deleteInputStruct(struct input_data input,int seqCount);
-struct index *calculateInterval(char **transform, int *seqLength,int seqCount);
+struct index *calculateInterval(char **transform, int *seqLength,int seqCount,char **revTransform);
 int *calculateO(char *sequence,int seqLength,int letterValue);
 int calculateC(char *sequence, int seqLength,int letterValue);
 void intervalToFile(struct index *FMidx, int seqCount,struct suffix **m,char **transform,struct input_data input);

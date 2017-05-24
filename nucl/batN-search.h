@@ -8,7 +8,8 @@ struct index
 	char *transform;
 	int length;
     	int **O;
-    	int C[5];
+	int **R;
+    	int C[6];
 };
 
 struct query
@@ -22,13 +23,14 @@ struct query
 struct output
 {
 	char *sequence;
-	int start;
-	int end;
+	int low;
+	int high;
 };
 
 int *getLength(int seqCount);
 int baseMap(char temp);
-void outputToFile(struct output **out, int qsc, int isc);
+void printResults(struct output **out, int qsc, int isc,struct index *interval);
+void outputToFile(struct output **out, int qsc, int isc,struct index *interval,struct query input);
 struct output **search(struct query input,int qsc,struct index *interval,int isc);
 void read_fasta(char *fileName, struct query *input);
 struct index *getIndex(int *seqCount);
