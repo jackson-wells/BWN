@@ -13,27 +13,27 @@ char OUTPUT_FILE[100];
 
 /* MEMORY ALLOCATION FUNCTIONS */
 
-struct query initializeInputStruct(int sCount, int *sLength)
+struct input initializeInputStruct(int sCount, int *sLength)
 {
-        struct query input;
+        struct input query;
         int i;
         int n = 100;
-        input.length = (int *) malloc(sCount * sizeof(int));
-        input.name = (char **) malloc(sCount * sizeof(char *));
-        input.sequence = (char **) malloc(sCount * sizeof(char *));
+        query.length = (int *) malloc(sCount * sizeof(int));
+        query.name = (char **) malloc(sCount * sizeof(char *));
+        query.sequence = (char **) malloc(sCount * sizeof(char *));
         for(i = 0; i < sCount;i++)
         {
-                input.name[i] = (char *) malloc(n*(sizeof(char)));
-                input.sequence[i] = (char *) malloc(sLength[i] * sizeof(char));
+                query.name[i] = (char *) malloc(n*(sizeof(char)));
+                query.sequence[i] = (char *) malloc(sLength[i] * sizeof(char));
         }
-        return input;
+        return query;
 }
 
 /* HELPER FUNCTIONS */
 
 /*  seqCount
  *
- *      Purpose: Find the number of sequences in the input file
+ *      Purpose: Find the number of sequences in the query file
  *              Returns: integer
  *              */
 int seqCount(char *fileName)    /*reutrns number of sequences present in a multi-fasta file*/
@@ -64,7 +64,7 @@ char *removePrefix(char *input)
 
 /*  seqLength
  *
- *      Purpose: get the lengths of input sequences from file
+ *      Purpose: get the lengths of query sequences from file
  *              Returns: array of integers
  *              */
 int *seqLength(char *fileName,int seqCount,int cCount) /*returns an array of sequence lengths*/
@@ -91,7 +91,7 @@ int *seqLength(char *fileName,int seqCount,int cCount) /*returns an array of seq
  *      Purpose: Store FASTA file information into memory
  *              Returns: Nothing, Variables passed by reference
  *              */
-void read_fasta(char *fileName, struct query *input)
+void read_fasta(char *fileName, struct input *query)
 {
     int charCount = MAX_LINE_LENGTH;
     char *temp = (char *) malloc(charCount * sizeof(char));
@@ -104,7 +104,7 @@ void read_fasta(char *fileName, struct query *input)
             {
                     strtok(temp,"\n");
                     memmove(temp, temp+1, strlen(temp));
-                    strcpy(input->name[i],temp);
+                    strcpy(query->name[i],temp);
             }
             else if(temp[0] == '\n') /*if line is empty*/
             {
@@ -114,8 +114,8 @@ void read_fasta(char *fileName, struct query *input)
             {
                     strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
                     //strcat(temp,"$");
-                    strcpy(input->sequence[i],temp);    /*saving string in memory*/
-                    input->length[i] = strlen(temp);
+                    strcpy(query->sequence[i],temp);    /*saving string in memory*/
+                    query->length[i] = strlen(temp);
                     i++;
             }
     }
@@ -141,31 +141,31 @@ int baseMap(char temp)
         else if(temp == 'T') return 4;
 }
 
-void handleS(struct query *input, char *sequence)
+void handleS(struct input *query, char *sequence)
 {
     printf("\nHere is the string you entered:\n%s\n\n",sequence);
     int *seqL = (int *) malloc(sizeof(int));
     seqL[0] = strlen(sequence);
     int seqC = 1;
 //    strcat(sequence,"$");
-    *input = initializeInputStruct(seqC,seqL);
-    input->length[0] = seqL[0];
-    strcpy(input->sequence[0],sequence);
-    strcpy(input->name[0],"Command Line String Input");
+    *query = initializeInputStruct(seqC,seqL);
+    query->length[0] = seqL[0];
+    strcpy(query->sequence[0],sequence);
+    strcpy(query->name[0],"Command Line String Input");
 }
 
-void handleF(struct query *input,char *fileName)
+void handleF(struct input *query,char *fileName)
 {
     	int sCount = seqCount(fileName);
     	int cCount = MAX_LINE_LENGTH;
     	int *sLength = seqLength(fileName,sCount,cCount);
-    	*input = initializeInputStruct(sCount,sLength);
-    	read_fasta(fileName, input);
+    	*query = initializeInputStruct(sCount,sLength);
+    	read_fasta(fileName, query);
 }
 
-struct query manageInputs(char *argv[], int argc, int *sCount)
+struct input manageInputs(char *argv[], int argc, int *sCount)
 {
-	struct query input;
+	struct input query;
         int c;
         if(argc <= 1)   /*no arguements supplied*/
         {
@@ -178,16 +178,16 @@ struct query manageInputs(char *argv[], int argc, int *sCount)
                 switch (c)
                 {
                         case 'h':
-                                printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwn-search <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta file\n-s\t\tFor input of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n\n");
+                                printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwn-search <options>\"\n\nOptions:\n\n-f\t\tFor query of a fasta file\n-s\t\tFor query of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n\n");
                                 exit(0);
 
                         case 'f':
-                                handleF(&input,optarg);
+                                handleF(&query,optarg);
                                 *sCount = seqCount(optarg);
                                 break;
 
                         case 's' :
-                                handleS(&input,optarg);
+                                handleS(&query,optarg);
                                 *sCount = 1;
                                 break;
 
@@ -212,7 +212,7 @@ struct query manageInputs(char *argv[], int argc, int *sCount)
 
                 }
         }
-        return input;
+        return query;
 }
 
 int getCount()
@@ -244,14 +244,14 @@ int *getLength(int seqCount)
         return length;
 }
 
-struct index *getIndex(int *IseqCount)
+struct FMidx *getIndex(int *IseqCount)
 {
 	int seqCount = getCount();
 	int *seqLength = getLength(seqCount);
 	*IseqCount = seqCount;
 	int charCount = MAX_LINE_LENGTH;
 	char *temp = (char *) malloc((MAX_LINE_LENGTH+1)*sizeof(char));
-	struct index *tempIndex = (struct index *) malloc(seqCount * sizeof(struct index));
+	struct FMidx *tempIndex = (struct FMidx *) malloc(seqCount * sizeof(struct FMidx));
 	FILE *file = fopen(INTERVAL_FILE,"r");
     	int i,j;
 	for(i = 0; i < seqCount; i++)
@@ -365,7 +365,7 @@ struct index *getIndex(int *IseqCount)
 	return tempIndex;
 }
 
-struct output **search(struct query input,int qsc,struct index *interval,int isc)
+struct output **search(struct input query,int qsc,struct FMidx *index,int isc)
 {
 	int z,j;
 	struct output **temp = (struct output **) malloc(qsc*sizeof(struct output *));
@@ -374,17 +374,17 @@ struct output **search(struct query input,int qsc,struct index *interval,int isc
 		temp[z] = (struct output *) malloc(isc*sizeof(struct output));
 		for(j = 0; j < isc; j++)
 		{
-			temp[z][j].sequence = (char *) malloc(input.length[z]*sizeof(char));
-			strcpy(temp[z][j].sequence,input.sequence[z]);
-			int i = input.length[z]-1;
-			char c = input.sequence[z][i];
-			int low = interval[j].C[baseMap(c)] + 1;
-			int high = interval[j].C[baseMap(c)+1];
+			temp[z][j].sequence = (char *) malloc(query.length[z]*sizeof(char));
+			strcpy(temp[z][j].sequence,query.sequence[z]);
+			int i = query.length[z]-1;
+			char c = query.sequence[z][i];
+			int low = index[j].C[baseMap(c)] + 1;
+			int high = index[j].C[baseMap(c)+1];
 			while(low <= high && 1 <= i)
 			{
-				c = input.sequence[z][i-1];
-				low = interval[j].C[baseMap(c)] + interval[j].O[baseMap(c)][low-2] +1; 
-				high = interval[j].C[baseMap(c)] + interval[j].O[baseMap(c)][high-1]; //-1 for 0-base
+				c = query.sequence[z][i-1];
+				low = index[j].C[baseMap(c)] + index[j].O[baseMap(c)][low-2] +1; 
+				high = index[j].C[baseMap(c)] + index[j].O[baseMap(c)][high-1]; //-1 for 0-base
 				i = i - 1;
 			}
 			if(high < low)
@@ -395,7 +395,7 @@ struct output **search(struct query input,int qsc,struct index *interval,int isc
 			else
 			{
 				temp[z][j].low = low-1;
-				temp[z][j].high = high-1;//interval[j].SA[high-1];
+				temp[z][j].high = high-1;//index[j].SA[high-1];
 			}
 		}
 	}	
@@ -403,24 +403,24 @@ struct output **search(struct query input,int qsc,struct index *interval,int isc
 }
 
 
-int **calculateD(struct index *interval,int isc, struct query input,int qsc)
+int **calculateD(struct FMidx *index,int isc, struct input query,int qsc)
 {
 	int i,j;
 	int **temp = (int **) malloc(qsc*sizeof(int *));
 	for(i = 0; i < qsc; i++)
 	{
-		temp[i] = (int *) malloc(input.length[i]*sizeof(int));
+		temp[i] = (int *) malloc(query.length[i]*sizeof(int));
 		int low = 1;
-		int high = interval[i].length;
+		int high = index[i].length;
 		int d = 0;
-		for(j = 0; j < input.length[i]; j++)
+		for(j = 0; j < query.length[i]; j++)
 		{
-			low = interval[i].C[baseMap(input.sequence[i][j])] + interval[i].R[baseMap(input.sequence[i][j])][low-2] +1;
-			high = interval[i].C[baseMap(input.sequence[i][j])] + interval[i].R[baseMap(input.sequence[i][j])][high-1];
+			low = index[i].C[baseMap(query.sequence[i][j])] + index[i].R[baseMap(query.sequence[i][j])][low-2] +1;
+			high = index[i].C[baseMap(query.sequence[i][j])] + index[i].R[baseMap(query.sequence[i][j])][high-1];
 			if(low > high)
 			{
 				low = 1;
-				high = interval[i].length;
+				high = index[i].length;
 				d = d + 1;
 			}
 			temp[i][j] = d;
@@ -429,7 +429,7 @@ int **calculateD(struct index *interval,int isc, struct query input,int qsc)
 	return temp;
 }
 
-struct output ***inExactSearch(struct query input,int qsc,struct index *interval,int isc,int **D)
+struct output ***inExactSearch(struct input query,int qsc,struct FMidx *index,int isc,int **D)
 {
 	int i,j;
 	struct output ***temp = (struct output ***) malloc(qsc*sizeof(struct output **));
@@ -438,12 +438,12 @@ struct output ***inExactSearch(struct query input,int qsc,struct index *interval
 		temp[i] = (struct output **) malloc(isc*sizeof(struct output *));
 		for(j = 0; j < isc; j++)
 		{
-			temp[i][j] = inexRecur(interval[i],D[i],input.sequence[i],input.length[i],D[i][j],1,interval[i].length);
+			temp[i][j] = inexRecur(index[i],D[i],query.sequence[i],query.length[i],D[i][j],1,index[i].length);
 		}
 	}
 }
 
-struct output *inexRecur(struct index interval, int *D,char *W,int i,int d, int low, int high)
+struct output *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high)
 {
 	if(d < D[i]){ return NULL;}
 	struct output *temp =  (struct output *) malloc(5*sizeof(struct output)); //5 is chosen # of allowed 
@@ -453,15 +453,15 @@ struct output *inexRecur(struct index interval, int *D,char *W,int i,int d, int 
 		temp[i].high = high;
 		return temp;
 	}
-	temp = inexRecur(interval,D,W,i-1,d-1,low,high); //overwrite temp?
+	temp = inexRecur(index,D,W,i-1,d-1,low,high); //overwrite temp?
 	int j;
 	for(j = 1;j < 5; j++)
 	{
-		low = interval.C[j] + interval.O[j][low-2] + 1;
-		high = interval.C[j] + interval.O[j][high-1];
+		low = index.C[j] + index.O[j][low-2] + 1;
+		high = index.C[j] + index.O[j][high-1];
 		if(low <= high)
 		{
-			temp = inexRecur(interval,D,W,i,d-1,low,high);
+			temp = inexRecur(index,D,W,i,d-1,low,high);
 			if(revBaseMap(j) == W[i])
 			{
 				//for(i = 0; i < 5; i++)
@@ -470,18 +470,18 @@ struct output *inexRecur(struct index interval, int *D,char *W,int i,int d, int 
 				//	
 				//	compare returned valuses? 	
 				//}
-				temp = inexRecur(interval,D,W,i-1,d,low,high);
+				temp = inexRecur(index,D,W,i-1,d,low,high);
 			}
 			else
 			{
-				temp = inexRecur(interval,D,W,i-1,d-1,low,high);
+				temp = inexRecur(index,D,W,i-1,d-1,low,high);
 			}
 		}
 	}
 	return temp;
 }
 
-void printResults(struct output **out, int qsc, int isc,struct index *interval)
+void printResults(struct output **out, int qsc, int isc,struct FMidx *index)
 {
 	int i,j;
 	for(i = 0; i < qsc; i++)
@@ -498,7 +498,7 @@ void printResults(struct output **out, int qsc, int isc,struct index *interval)
 			{
 				if(out[i][j].high == out[i][j].low )
 				{
-					printf("\t\tFound \"%s\" starting at the %dth position\n\n",out[i][j].sequence,interval[j].SA[out[i][j].low]);
+					printf("\t\tFound \"%s\" starting at the %dth position\n\n",out[i][j].sequence,index[j].SA[out[i][j].low]);
 				}
 				else
 				{
@@ -507,7 +507,7 @@ void printResults(struct output **out, int qsc, int isc,struct index *interval)
 					printf("\t\tFound \"%s\" starting at positions:\n",out[i][j].sequence);
 					for(z = 0; z < temp; z++)
 					{
-						printf("\t\t%d\n",interval[j].SA[out[i][j].low+z]);	
+						printf("\t\t%d\n",index[j].SA[out[i][j].low+z]);	
 					}
 					printf("\n");
 				}
@@ -517,7 +517,7 @@ void printResults(struct output **out, int qsc, int isc,struct index *interval)
 	}	
 }
 
-void outputToFile(struct output **out, int qsc, int isc,struct index *interval,struct query input)
+void outputToFile(struct output **out, int qsc, int isc,struct FMidx *index,struct input query)
 {
         FILE *f;
         if(strlen(OUTPUT_FILE) == 0)
@@ -539,11 +539,11 @@ void outputToFile(struct output **out, int qsc, int isc,struct index *interval,s
 	fprintf(f,"Query\tDatabase\tStart Position\n--------------------------------------\n");
         for(i = 0; i < qsc; i++)
         {
-                fprintf(f,"%s\t",input.name[i]);
+                fprintf(f,"%s\t",query.name[i]);
                 for(j = 0; j < isc; j++)
                 {
 			if(j > 0){ fprintf(f,"\t");}
-                        fprintf(f,"%s\t\t",interval[j].desc);
+                        fprintf(f,"%s\t\t",index[j].desc);
                         if(out[i][j].low == 0 && out[i][j].high == 0)
                         {
                                 fprintf(f,"Not Found\n");
@@ -552,7 +552,7 @@ void outputToFile(struct output **out, int qsc, int isc,struct index *interval,s
                         {
                                 if(out[i][j].high == out[i][j].low)
                                 {
-                                        fprintf(f,"%d\n",interval[j].SA[out[i][j].low]);
+                                        fprintf(f,"%d\n",index[j].SA[out[i][j].low]);
                                 }
                                 else
                                 {
@@ -560,7 +560,7 @@ void outputToFile(struct output **out, int qsc, int isc,struct index *interval,s
                                         int z;
                                         for(z = 0; z < temp; z++)
                                         {
-                                                fprintf(f,"%d",interval[j].SA[out[i][j].low+z]);
+                                                fprintf(f,"%d",index[j].SA[out[i][j].low+z]);
 						if(z < (temp-1)){ fprintf(f,","); }
                                         }
                                         fprintf(f,"\n");
@@ -579,13 +579,13 @@ int main(int argc, char *argv[])
 {
 	int QseqCount = 0;
 	int IseqCount = 0;
-	struct query input = manageInputs(argv,argc,&QseqCount);
-        struct index *interval = getIndex(&IseqCount);
-	//int **D = calculateD(interval,IseqCount,input,QseqCount);
+	struct input query = manageInputs(argv,argc,&QseqCount);
+        struct FMidx *index = getIndex(&IseqCount);
+	//int **D = calculateD(index,IseqCount,query,QseqCount);
 	//Search
-	struct output **out = search(input,QseqCount,interval,IseqCount);
-	//struct output ***out = inExactSearch(input,QseqCount,interval,IseqCount,D);
+	struct output **out = search(query,QseqCount,index,IseqCount);
+	//struct output ***out = inExactSearch(query,QseqCount,index,IseqCount,D);
 	//Output
-	//outputToFile(out,QseqCount,IseqCount,interval,input);
-	printResults(out,QseqCount,IseqCount,interval);
+	//outputToFile(out,QseqCount,IseqCount,index,query);
+	printResults(out,QseqCount,IseqCount,index);
 }

@@ -1,7 +1,7 @@
 #ifndef BWN_SEARCH_H
 #define BWN_SEARCH_H
 
-struct index
+struct FMidx
 {
 	char *desc;
 	int *SA;
@@ -12,7 +12,7 @@ struct index
     	int C[6];
 };
 
-struct query
+struct input
 {
 	char *fileName;
 	char **name;
@@ -29,21 +29,21 @@ struct output
 
 int *getLength(int seqCount);
 int baseMap(char temp);
-void printResults(struct output **out, int qsc, int isc,struct index *interval);
-void outputToFile(struct output **out, int qsc, int isc,struct index *interval,struct query input);
-struct output **search(struct query input,int qsc,struct index *interval,int isc);
-void read_fasta(char *fileName, struct query *input);
-struct index *getIndex(int *seqCount);
-struct query manageInputs(char *argv[], int argc,int *sCount);
-void handleF(struct query *input,char *fileName);
-void handleS(struct query *input,char *sequence);
-struct query initializeInputStruct( int sCount, int *sLength);
+void printResults(struct output **out, int qsc, int isc,struct FMidx *index);
+void outputToFile(struct output **out, int qsc, int isc,struct FMidx *index,struct input query);
+struct output **search(struct input query,int qsc,struct FMidx *index,int isc);
+void read_fasta(char *fileName, struct input *query);
+struct FMidx *getIndex(int *seqCount);
+struct input manageInputs(char *argv[], int argc,int *sCount);
+void handleF(struct input *query,char *fileName);
+void handleS(struct input *query,char *sequence);
+struct input initializeInputStruct( int sCount, int *sLength);
 int *seqLength(char *fileName,int seqCount,int cCount);
 int seqCount(char *fileName);
-char *removePrefix(char *input);
-int **calculateD(struct index *interval,int isc,struct query input,int qsc);
-struct output ***inExactSearch(struct query input,int QseqCount,struct index *interval,int IseqCount,int **D);
-struct output *inexRecur(struct index interval, int *D,char *W,int i,int d, int low, int high);
+char *removePrefix(char *query);
+int **calculateD(struct FMidx *index,int isc,struct input query,int qsc);
+struct output ***inExactSearch(struct input query,int QseqCount,struct FMidx *index,int IseqCount,int **D);
+struct output *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high);
 char revBaseMap(int temp);
 
 #endif
