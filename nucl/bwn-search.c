@@ -13,18 +13,18 @@ char OUTPUT_FILE[100];
 
 /* MEMORY ALLOCATION FUNCTIONS */
 
-struct input initializeInputStruct(int sCount, int *sLength)
+struct input initializeInputStruct(int seqCount, int *seqLength)
 {
         struct input query;
         int i;
         int n = 100;
-        query.length = (int *) malloc(sCount * sizeof(int));
-        query.name = (char **) malloc(sCount * sizeof(char *));
-        query.sequence = (char **) malloc(sCount * sizeof(char *));
-        for(i = 0; i < sCount;i++)
+        query.length = (int *) malloc(seqCount * sizeof(int));
+        query.name = (char **) malloc(seqCount * sizeof(char *));
+        query.sequence = (char **) malloc(seqCount * sizeof(char *));
+        for(i = 0; i < seqCount;i++)
         {
                 query.name[i] = (char *) malloc(n*(sizeof(char)));
-                query.sequence[i] = (char *) malloc(sLength[i] * sizeof(char));
+                query.sequence[i] = (char *) malloc(seqLength[i] * sizeof(char));
         }
         return query;
 }
@@ -36,7 +36,7 @@ struct input initializeInputStruct(int sCount, int *sLength)
  *      Purpose: Find the number of sequences in the query file
  *              Returns: integer
  *              */
-int seqCount(char *fileName)    /*reutrns number of sequences present in a multi-fasta file*/
+int getSeqCount(char *fileName)    /*reutrns number of sequences present in a multi-fasta file*/
 {
         FILE *file = fopen(fileName,"r");
         int lineCount = 0;
@@ -67,13 +67,13 @@ char *removePrefix(char *input)
  *      Purpose: get the lengths of query sequences from file
  *              Returns: array of integers
  *              */
-int *seqLength(char *fileName,int seqCount,int cCount) /*returns an array of sequence lengths*/
+int *getSeqLength(char *fileName,int seqCount,int charCount) /*returns an array of sequence lengths*/
 {
         FILE *file = fopen(fileName,"r");
-        char *seq = (char *) malloc(cCount * sizeof(char));
+        char *seq = (char *) malloc(charCount * sizeof(char));
         int *seqLength = (int *) malloc(seqCount * sizeof(int));;
         int i = 0;
-        while(fgets(seq,cCount-1,file) != NULL)
+        while(fgets(seq,charCount-1,file) != NULL)
         {
             if(seq[0] != '>' && seq[0] != '\n')
             {
@@ -95,7 +95,7 @@ void read_fasta(char *fileName, struct input *query)
 {
     int charCount = MAX_LINE_LENGTH;
     char *temp = (char *) malloc(charCount * sizeof(char));
-    /*m = newArr(seqC,sLength);*/
+    /*m = newArr(seqC,seqLength);*/
     FILE *file = fopen(fileName,"r");
     int i = 0;
     while(fgets(temp,charCount,file) != NULL)   /*loops through each line of a file*/
@@ -156,14 +156,14 @@ void handleS(struct input *query, char *sequence)
 
 void handleF(struct input *query,char *fileName)
 {
-    	int sCount = seqCount(fileName);
-    	int cCount = MAX_LINE_LENGTH;
-    	int *sLength = seqLength(fileName,sCount,cCount);
-    	*query = initializeInputStruct(sCount,sLength);
+    	int seqCount = getSeqCount(fileName);
+    	int charCount = MAX_LINE_LENGTH;
+    	int *seqLength = getSeqLength(fileName,seqCount,charCount);
+    	*query = initializeInputStruct(seqCount,seqLength);
     	read_fasta(fileName, query);
 }
 
-struct input manageInputs(char *argv[], int argc, int *sCount)
+struct input manageInputs(char *argv[], int argc, int *seqCount)
 {
 	struct input query;
         int c;
@@ -183,12 +183,12 @@ struct input manageInputs(char *argv[], int argc, int *sCount)
 
                         case 'f':
                                 handleF(&query,optarg);
-                                *sCount = seqCount(optarg);
+                                *seqCount = getSeqCount(optarg);
                                 break;
 
                         case 's' :
                                 handleS(&query,optarg);
-                                *sCount = 1;
+                                *seqCount = 1;
                                 break;
 
                         case '?' :

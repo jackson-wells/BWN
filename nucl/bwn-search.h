@@ -34,12 +34,12 @@ void outputToFile(struct output **out, int qsc, int isc,struct FMidx *index,stru
 struct output **search(struct input query,int qsc,struct FMidx *index,int isc);
 void read_fasta(char *fileName, struct input *query);
 struct FMidx *getIndex(int *seqCount);
-struct input manageInputs(char *argv[], int argc,int *sCount);
+struct input manageInputs(char *argv[], int argc,int *seqCount);
 void handleF(struct input *query,char *fileName);
 void handleS(struct input *query,char *sequence);
-struct input initializeInputStruct( int sCount, int *sLength);
-int *seqLength(char *fileName,int seqCount,int cCount);
-int seqCount(char *fileName);
+struct input initializeInputStruct( int seqCount, int *seqLength);
+int *getSeqLength(char *fileName,int seqCount,int charCount);
+int getSeqCount(char *fileName);
 char *removePrefix(char *query);
 int **calculateD(struct FMidx *index,int isc,struct input query,int qsc);
 struct output ***inExactSearch(struct input query,int QseqCount,struct FMidx *index,int IseqCount,int **D);
