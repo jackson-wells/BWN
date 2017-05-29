@@ -41,5 +41,9 @@ struct query initializeInputStruct( int sCount, int *sLength);
 int *seqLength(char *fileName,int seqCount,int cCount);
 int seqCount(char *fileName);
 char *removePrefix(char *input);
+int **calculateD(struct index *interval,int isc,struct query input,int qsc);
+struct output ***inExactSearch(struct query input,int QseqCount,struct index *interval,int IseqCount,int **D);
+struct output *inexRecur(struct index interval, int *D,char *W,int i,int d, int low, int high);
+char revBaseMap(int temp);
 
 #endif

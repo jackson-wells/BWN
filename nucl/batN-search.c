@@ -123,6 +123,24 @@ void read_fasta(char *fileName, struct query *input)
         /*free(temp);*/
 }
 
+char revBaseMap(int temp)
+{
+        if(temp == 0){ return '$';}
+        else if(temp == 1){return 'A';}
+        else if(temp == 2){return 'C';}
+        else if(temp == 3){return 'G';}
+        else if(temp == 4){return 'T';}
+}
+
+int baseMap(char temp)
+{
+        if(temp == '$') return 0;
+        else if(temp == 'A') return 1;
+        else if(temp == 'C') return 2;
+        else if(temp == 'G') return 3;
+        else if(temp == 'T') return 4;
+}
+
 void handleS(struct query *input, char *sequence)
 {
     printf("\nHere is the string you entered:\n%s\n\n",sequence);
@@ -320,7 +338,6 @@ struct index *getIndex(int *IseqCount)
 			if(oCount >= 5)
 			{
 				oCount = 0;
-				i++;
 			}
                 }
 		else if(temp[0] == 'r')
@@ -346,15 +363,6 @@ struct index *getIndex(int *IseqCount)
 	}
 	fclose(file);
 	return tempIndex;
-}
-
-int baseMap(char temp)
-{
-        if(temp == '$') return 0;
-        else if(temp == 'A') return 1;
-        else if(temp == 'C') return 2;
-        else if(temp == 'G') return 3;
-        else if(temp == 'T') return 4;
 }
 
 struct output **search(struct query input,int qsc,struct index *interval,int isc)
@@ -395,8 +403,82 @@ struct output **search(struct query input,int qsc,struct index *interval,int isc
 }
 
 
-int *calculateD(struct index *interval,int isc)
+int **calculateD(struct index *interval,int isc, struct query input,int qsc)
 {
+	int i,j;
+	int **temp = (int **) malloc(qsc*sizeof(int *));
+	for(i = 0; i < qsc; i++)
+	{
+		temp[i] = (int *) malloc(input.length[i]*sizeof(int));
+		int low = 1;
+		int high = interval[i].length;
+		int d = 0;
+		for(j = 0; j < input.length[i]; j++)
+		{
+			low = interval[i].C[baseMap(input.sequence[i][j])] + interval[i].R[baseMap(input.sequence[i][j])][low-2] +1;
+			high = interval[i].C[baseMap(input.sequence[i][j])] + interval[i].R[baseMap(input.sequence[i][j])][high-1];
+			if(low > high)
+			{
+				low = 1;
+				high = interval[i].length;
+				d = d + 1;
+			}
+			temp[i][j] = d;
+		}
+	}
+	return temp;
+}
+
+struct output ***inExactSearch(struct query input,int qsc,struct index *interval,int isc,int **D)
+{
+	int i,j;
+	struct output ***temp = (struct output ***) malloc(qsc*sizeof(struct output **));
+	for(i = 0; i < qsc; i++)
+	{
+		temp[i] = (struct output **) malloc(isc*sizeof(struct output *));
+		for(j = 0; j < isc; j++)
+		{
+			temp[i][j] = inexRecur(interval[i],D[i],input.sequence[i],input.length[i],D[i][j],1,interval[i].length);
+		}
+	}
+}
+
+struct output *inexRecur(struct index interval, int *D,char *W,int i,int d, int low, int high)
+{
+	if(d < D[i]){ return NULL;}
+	struct output *temp =  (struct output *) malloc(5*sizeof(struct output)); //5 is chosen # of allowed 
+	if(i < 1)								  //matches 
+	{ 
+		temp[i].low = low;
+		temp[i].high = high;
+		return temp;
+	}
+	temp = inexRecur(interval,D,W,i-1,d-1,low,high); //overwrite temp?
+	int j;
+	for(j = 1;j < 5; j++)
+	{
+		low = interval.C[j] + interval.O[j][low-2] + 1;
+		high = interval.C[j] + interval.O[j][high-1];
+		if(low <= high)
+		{
+			temp = inexRecur(interval,D,W,i,d-1,low,high);
+			if(revBaseMap(j) == W[i])
+			{
+				//for(i = 0; i < 5; i++)
+				//{
+				//	temp2 = temp;
+				//	
+				//	compare returned valuses? 	
+				//}
+				temp = inexRecur(interval,D,W,i-1,d,low,high);
+			}
+			else
+			{
+				temp = inexRecur(interval,D,W,i-1,d-1,low,high);
+			}
+		}
+	}
+	return temp;
 }
 
 void printResults(struct output **out, int qsc, int isc,struct index *interval)
@@ -499,9 +581,11 @@ int main(int argc, char *argv[])
 	int IseqCount = 0;
 	struct query input = manageInputs(argv,argc,&QseqCount);
         struct index *interval = getIndex(&IseqCount);
+	//int **D = calculateD(interval,IseqCount,input,QseqCount);
 	//Search
 	struct output **out = search(input,QseqCount,interval,IseqCount);
+	//struct output ***out = inExactSearch(input,QseqCount,interval,IseqCount,D);
 	//Output
-	outputToFile(out,QseqCount,IseqCount,interval,input);
-	//printResults(out,QseqCount,IseqCount,interval);
+	//outputToFile(out,QseqCount,IseqCount,interval,input);
+	printResults(out,QseqCount,IseqCount,interval);
 }

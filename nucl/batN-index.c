@@ -237,7 +237,10 @@ void read_fasta(char *fileName, struct input_data *input)
                     	i++;
             	}
     	}
+	fflush(file);
     	fclose(file);
+	//free(temp);
+	//free(rev);
 }
 
 /*  charToEnd
@@ -595,12 +598,12 @@ void intervalToFile(struct index *FMidx, int seqCount,struct suffix **m, char **
 	FILE *f;
 	if(strlen(OUTPUT_FILE) == 0) 
 	{
-		f = fopen("index.batN","w");	
+		f = fopen("/nfs0/Hendrix_Lab/bwp/nucl/index.batN","w");	
 	}
 	else
 	{
 		strcat(OUTPUT_FILE,".batN");
-		f = fopen(OUTPUT_FILE,"w");
+		f = fopen("/nfs0/Hendrix_Lab/bwp/nucl/OUTPUT_FILE","w");
 	}
 	/*write each instance of M to a file*/
 	if (f == NULL)
