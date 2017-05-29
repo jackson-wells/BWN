@@ -162,7 +162,7 @@ void freeSuffixArray(struct suffix **m,int seqCount,int *seqLength)
     Purpose: Find the number of sequences in the query file
 	Returns: integer
 */
-int seqCount(char *fileName)	/*reutrns number of sequences present in a multi-fasta file*/
+int getSeqCount(char *fileName)	/*reutrns number of sequences present in a multi-fasta file*/
 {
 	FILE *file = fopen(fileName,"r");
 	int lineCount = 0;
@@ -182,13 +182,13 @@ int seqCount(char *fileName)	/*reutrns number of sequences present in a multi-fa
     Purpose: get the lengths of query sequences from file
 	Returns: array of integers
 */
-int *seqLength(char *fileName,int seqCount,int cCount) /*returns an array of sequence lengths*/
+int *getLength(char *fileName,int seqCount,int charCount) /*returns an array of sequence lengths*/
 {
         FILE *file = fopen(fileName,"r");
-        char *seq = (char *) malloc(cCount * sizeof(char));
+        char *seq = (char *) malloc(charCount * sizeof(char));
         int *seqLength = (int *) malloc(seqCount * sizeof(int));;
         int i = 0;
-        while(fgets(seq,cCount-1,file) != NULL)
+        while(fgets(seq,charCount-1,file) != NULL)
         {
             	if(seq[0] != '>' && seq[0] != '\n')
             	{
@@ -274,7 +274,7 @@ char* reverse(char *str,int length)
 
 /* INPUT HANDLING FUNCTIONS */
 
-struct input manageInputs(int argc, char *argv[],int *sCount) /*handles initial query into the program*/
+struct input manageInputs(int argc, char *argv[],int *seqCount) /*handles initial query into the program*/
 {
 	struct input query;
   	int c;
@@ -294,12 +294,12 @@ struct input manageInputs(int argc, char *argv[],int *sCount) /*handles initial 
 	
 	            	case 'f':
 		                handleF(&query,optarg);
-		                *sCount = seqCount(optarg);
+		                *seqCount = getSeqCount(optarg);
 		                break;
 	
 		        case 's' :
 		                handleS(&query,optarg);
-		                *sCount = 1;
+		                *seqCount = 1;
 		                break;
 	
    		        case '?' :
@@ -331,11 +331,11 @@ void handleS(struct input *query, char *sequence)
     	printf("\nHere is the string you entered:\n%s\n\n",sequence);
     	int *seqLength = (int *) malloc(sizeof(int));
     	seqLength[0] = strlen(sequence) + 1;
-    	int seqC = 1;
+    	int seqCount = 1;
 	char *rev = reverse(sequence,strlen(sequence));
 	strcat(rev,"$");
     	strcat(sequence,"$");
-    	*query = initializeInputStruct(seqC,seqLength);
+    	*query = initializeInputStruct(seqCount,seqLength);
     	query->length[0] = seqLength[0];
 	strcpy(query->reverse[0],rev);
     	strcpy(query->sequence[0],sequence);
@@ -344,10 +344,10 @@ void handleS(struct input *query, char *sequence)
 
 void handleF(struct input *query,char *fileName)
 {
-    	int sCount = seqCount(fileName);
-    	int cCount = MAX_LINE_LENGTH;
-    	int *sLength = seqLength(fileName,sCount,cCount);
-    	*query = initializeInputStruct(sCount,sLength);
+    	int seqCount = getSeqCount(fileName);
+    	int charCount = MAX_LINE_LENGTH;
+    	int *seqLength = getLength(fileName,seqCount,charCount);
+    	*query = initializeInputStruct(seqCount,seqLength);
     	read_fasta(fileName, query);
 }
 
