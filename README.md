@@ -1,4 +1,4 @@
-# BAT
+# BWN
 
 ## **B**urrows-Wheeler transform **A**lignment **T**ool
 
