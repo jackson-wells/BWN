@@ -654,7 +654,7 @@ int main(int argc, char *argv[])
 	struct input query = manageInputs(argc,argv,&seqCount);
 	struct suffix **m = buildSuffixArray(query,seqCount);
 	struct suffix **Rm = buildReverseSuffixArray(query,seqCount);
-	//printSuffixArray(m,seqCount,query.length);
+	printSuffixArray(m,seqCount,query.length);
 	char **transform = bwt(m,seqCount,query.length);	/*contains transforms of all query fastas*/
 	char **revTransform = bwt(Rm,seqCount,query.length);
 	//printBwt(m,transform,seqCount);

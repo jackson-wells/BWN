@@ -20,13 +20,29 @@ struct input
 	char **sequence;
 };
 
-struct output
+struct matches
 {
-	char *sequence;
 	int low;
 	int high;
+	struct matches *next;
 };
 
+struct output 
+{
+	int low;
+	int high;
+	char *sequence;
+};
+
+struct results
+{
+	struct matches *match;
+	int matches;
+};
+
+struct matches *getUnion(struct matches *head1, struct matches *head2);
+void push(struct matches** head_ref, int k,int l);
+int isPresent(struct matches *head, int k, int l);
 int *getLength(int seqCount);
 int baseMap(char temp);
 void printResults(struct output **out, int qsc, int isc,struct FMidx *index);
@@ -41,9 +57,12 @@ struct input initializeInputStruct( int seqCount, int *seqLength);
 int *getSeqLength(char *fileName,int seqCount,int charCount);
 int getSeqCount(char *fileName);
 char *removePrefix(char *query);
-int **calculateD(struct FMidx *index,int isc,struct input query,int qsc);
-struct output ***inExactSearch(struct input query,int QseqCount,struct FMidx *index,int IseqCount,int **D);
-struct output *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high);
+int ***calculateD(struct FMidx *index,int isc,struct input query,int qsc);
+struct results **inexactSearch(struct input query,int QseqCount,struct FMidx *index,int IseqCount,int ***D);
+struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high);
 char revBaseMap(int temp);
+void printInResults(struct results **out,int qsc,int isc);
+struct matches *pointToTail(struct matches *match);
+struct matches *append(struct matches *match, struct matches *results);
 
 #endif
