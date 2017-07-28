@@ -1,7 +1,5 @@
 # BWN
 
-## **B**urrows-Wheeler transform **A**lignment **T**ool
-
 ### Biological Sequence Search using the Burrows-Wheeler Transform
 
 Current Version:
