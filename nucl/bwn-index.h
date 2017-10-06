@@ -22,6 +22,8 @@ struct FMidx
     	int C[5];
 };
 
+extern char OUTPUT_FILE[]; 
+
 struct suffix **buildReverseSuffixArray(struct input query,int seqCount);
 void populateReverseSuffixArray(struct suffix **m,struct input query,int seqCount);
 char *reverse(char *str,int length);

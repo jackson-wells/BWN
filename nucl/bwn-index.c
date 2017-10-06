@@ -8,7 +8,7 @@
 #include <math.h>
 
 int MAX_LINE_LENGTH = 10000000;
-char OUTPUT_FILE[100];
+char OUTPUT_FILE[] = "index.bwn";
 
 /* PRINT FUNCTIONS */
 
@@ -598,12 +598,12 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
 	FILE *f;
 	if(strlen(OUTPUT_FILE) == 0) 
 	{
-		f = fopen("/nfs0/Hendrix_Lab/bwp/nucl/index.bwn","w");	//change when moved to new infrastructure
+		f = fopen("index.bwn","w");	//change when moved to new infrastructure
 	}
 	else
 	{
 		strcat(OUTPUT_FILE,".bwn");
-		f = fopen("/nfs0/Hendrix_Lab/bwp/nucl/OUTPUT_FILE","w");
+		f = fopen(OUTPUT_FILE,"w");
 	}
 	/*write each instance of M to a file*/
 	if (f == NULL)
