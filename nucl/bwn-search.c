@@ -182,9 +182,17 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
                                 exit(0);
 
                         case 'f':
-                                handleF(&query,optarg);
-                                *seqCount = getSeqCount(optarg);
-                                break;
+				if(fileExists(optarg))
+                                {
+                                	handleF(&query,optarg);
+                                	*seqCount = getSeqCount(optarg);
+                                	break;
+				}
+				else
+				{
+					printf("%s not found, exiting\n",optarg);
+                                        exit(0);
+				}
 
                         case 's' :
                                 handleS(&query,optarg);
@@ -207,10 +215,13 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
                                 exit(0);
                         case 'm' :
                                 MAX_LINE_LENGTH = atoi(optarg);
+				break;
 			case 'o' :
                                 strcpy(OUTPUT_FILE,optarg);
+				break;
 			case 'd' : 
 				MAX_MISMATCHES = atoi(optarg);
+				break;
 			case 'i' :
 				if(fileExists(optarg))
 				{	
@@ -225,6 +236,7 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
 						exit(0);
 					}
 				}
+				break;
                 }
         }
         return query;
