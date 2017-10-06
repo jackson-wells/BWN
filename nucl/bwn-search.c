@@ -423,7 +423,7 @@ int ***calculateD(struct FMidx *index,int isc, struct input query,int qsc)
 //				printf("j: %d\n",j);
 				int k = index[z].C[baseMap(query.sequence[i][j])-1] + index[z].R[baseMap(query.sequence[i][j])][low-1] + 1;
 				int l = index[z].C[baseMap(query.sequence[i][j])-1] + index[z].R[baseMap(query.sequence[i][j])][high];
-				if(index[z].transform[high] == query.sequence[i][j]){k = k - 1;}
+				if(index[z].transform[high] == query.sequence[i][j]){k = k - 1;} //remove later
 //				printf("%d + %d + 1\n",index[z].C[baseMap(query.sequence[i][j])-1],index[z].R[baseMap(query.sequence[i][j])][k-1]);
 //				printf("%d + %d\n",index[z].C[baseMap(query.sequence[i][j])-1],index[z].R[baseMap(query.sequence[i][j])][l]);
 				if(k > l)
@@ -458,7 +458,7 @@ struct results **inexactSearch(struct input query,int qsc,struct FMidx *index,in
 
 struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high)
 {
-//	printf("D[i]:%d i:%d z:%d k:%d l:%d\n",D[i],i,d,low,high);
+	//printf("D[i]:%d i:%d z:%d k:%d l:%d\n",D[i],i,d,low,high);
 	struct matches *match = (struct matches *) malloc(sizeof(struct matches));
 	match->next = NULL;
 	struct matches *results = NULL;
@@ -488,7 +488,7 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 		//printf("k = %d + %d + 1\n",index.C[j],index.O[j+1][low-1]);
 		int l = index.C[j] + index.O[j+1][high];
 		//printf("l = %d + %d\n",index.C[j],index.O[j+1][high]);
-		//if(index.transform[0] == revBaseMap(j+1) && low == 1 )k = k - 1;
+		if(index.transform[0] == revBaseMap(j+1) && low == 1 && (high == index.length-1)){k = k - 1;}
 		if(k <= l)
 		{
 		        match = inexRecur(index,D,W,i,d-1,k,l); //gap in query
