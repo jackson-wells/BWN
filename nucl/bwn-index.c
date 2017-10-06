@@ -602,7 +602,7 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
 	}
 	else
 	{
-		strcat(OUTPUT_FILE,".bwn");
+		//strcat(OUTPUT_FILE,".bwn");
 		f = fopen(OUTPUT_FILE,"w");
 	}
 	/*write each instance of M to a file*/
