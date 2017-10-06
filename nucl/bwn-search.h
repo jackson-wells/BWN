@@ -40,6 +40,8 @@ struct results
 	int matches;
 };
 
+extern char INTERVAL_FILE[];
+
 struct matches *getUnion(struct matches *head1, struct matches *head2);
 void push(struct matches** head_ref, int k,int l);
 int isPresent(struct matches *head, int k, int l);
@@ -64,5 +66,6 @@ char revBaseMap(int temp);
 void printInResults(struct results **out,int qsc,int isc);
 struct matches *pointToTail(struct matches *match);
 struct matches *append(struct matches *match, struct matches *results);
+int fileExists(char *temp);
 
 #endif
