@@ -9,7 +9,7 @@
 
 int MAX_MISMATCHES = 0;
 int MAX_LINE_LENGTH = 10000000;
-#define INTERVAL_FILE "index.bwn"
+char INTERVAL_FILE[] ="index.bwn";
 char OUTPUT_FILE[100];
 
 /* MEMORY ALLOCATION FUNCTIONS */
@@ -76,11 +76,11 @@ int *getSeqLength(char *fileName,int seqCount,int charCount) /*returns an array 
         int i = 0;
         while(fgets(seq,charCount-1,file) != NULL)
         {
-            if(seq[0] != '>' && seq[0] != '\n')
-            {
-                seqLength[i] = strlen(seq);
-                i++;
-            }
+            	if(seq[0] != '>' && seq[0] != '\n')
+            	{
+            	    	seqLength[i] = strlen(seq);
+            	    	i++;
+            	}
         }
         fclose(file);
         /*free(seq);*/
@@ -94,33 +94,33 @@ int *getSeqLength(char *fileName,int seqCount,int charCount) /*returns an array 
  *              */
 void read_fasta(char *fileName, struct input *query)
 {
-    int charCount = MAX_LINE_LENGTH;
-    char *temp = (char *) malloc(charCount * sizeof(char));
-    /*m = newArr(seqC,seqLength);*/
-    FILE *file = fopen(fileName,"r");
-    int i = 0;
-    while(fgets(temp,charCount,file) != NULL)   /*loops through each line of a file*/
-    {
-            if(temp[0] == '>')      /*if line is a header*/
-            {
-                    strtok(temp,"\n");
-                    memmove(temp, temp+1, strlen(temp));
-                    strcpy(query->name[i],temp);
-            }
-            else if(temp[0] == '\n') /*if line is empty*/
-            {
-                    continue;
-            }
-            else    /*if line contains a nucleotide sequence*/
-            {
-                    strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
-                    //strcat(temp,"$");
-                    strcpy(query->sequence[i],temp);    /*saving string in memory*/
-                    query->length[i] = strlen(temp);
-                    i++;
-            }
-    }
-    fclose(file);
+    	int charCount = MAX_LINE_LENGTH;
+    	char *temp = (char *) malloc(charCount * sizeof(char));
+    	/*m = newArr(seqC,seqLength);*/
+    	FILE *file = fopen(fileName,"r");
+    	int i = 0;
+    	while(fgets(temp,charCount,file) != NULL)   /*loops through each line of a file*/
+    	{
+            	if(temp[0] == '>')      /*if line is a header*/
+            	{
+            		strtok(temp,"\n");
+                    	memmove(temp, temp+1, strlen(temp));
+                    	strcpy(query->name[i],temp);
+            	}
+            	else if(temp[0] == '\n') /*if line is empty*/
+            	{
+            	        continue;
+            	}
+            	else    /*if line contains a nucleotide sequence*/
+            	{
+                	strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
+                    	//strcat(temp,"$");
+                    	strcpy(query->sequence[i],temp);    /*saving string in memory*/
+                    	query->length[i] = strlen(temp);
+                    	i++;
+            	}
+    	}
+    	fclose(file);
         /*free(temp);*/
 }
 
@@ -144,15 +144,14 @@ int baseMap(char temp)
 
 void handleS(struct input *query, char *sequence)
 {
-    printf("\nHere is the string you entered:\n%s\n\n",sequence);
-    int *seqL = (int *) malloc(sizeof(int));
-    seqL[0] = strlen(sequence);
-    int seqC = 1;
-//    strcat(sequence,"$");
-    *query = initializeInputStruct(seqC,seqL);
-    query->length[0] = seqL[0];
-    strcpy(query->sequence[0],sequence);
-    strcpy(query->name[0],"Command Line String Input");
+    	printf("\nHere is the string you entered:\n%s\n\n",sequence);
+    	int *seqL = (int *) malloc(sizeof(int));
+    	seqL[0] = strlen(sequence);
+    	int seqC = 1;
+    	*query = initializeInputStruct(seqC,seqL);
+    	query->length[0] = seqL[0];
+    	strcpy(query->sequence[0],sequence);
+	strcpy(query->name[0],"Command Line String Input");
 }
 
 void handleF(struct input *query,char *fileName)
@@ -174,12 +173,12 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
                 exit(0);
         }
         opterr = 0;
-	while ((c = getopt (argc, argv, "hf:s:m:o:d:")) != -1) /*options must be added here to be recognized, options followed by : take in a parameter*/
+	while ((c = getopt (argc, argv, "hf:s:m:o:d:i:")) != -1) /*options must be added here to be recognized, options followed by : take in a parameter*/
         {
                 switch (c)
                 {
                         case 'h':
-                                printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwn-search <options>\"\n\nOptions:\n\n-f\t\tFor query of a fasta file\n-s\t\tFor query of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n-d\t\tTo designate the number of allowed mismatches\n\n");
+                                printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwn-search <options>\"\n\nOptions:\n\n-f\t\tFor query of a fasta file\n-s\t\tFor query of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n-d\t\tTo designate the number of allowed mismatches\n-i\t\tTo specify a custom index file\n\n");
                                 exit(0);
 
                         case 'f':
@@ -212,9 +211,38 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
                                 strcpy(OUTPUT_FILE,optarg);
 			case 'd' : 
 				MAX_MISMATCHES = atoi(optarg);
+			case 'i' :
+				if(fileExists(optarg))
+				{	
+					strcpy(INTERVAL_FILE,optarg);
+				}
+				else
+				{
+					printf("%s is not a valid file\nDefaulting to index.bwn\n",optarg);
+					if(!fileExists("index.bwn"))
+                                	{
+						printf("index.bwn not found, exiting\n");
+						exit(0);
+					}
+				}
                 }
         }
         return query;
+}
+
+int fileExists(char *temp)
+{
+	
+	FILE *file = fopen(temp, "r");
+	if (file)
+	{
+		fclose(file);
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 int getCount()
