@@ -7,7 +7,7 @@
 #include <math.h>
 #include "bwn-search.h"
 
-int MAX_MISMATCHES = 1;
+int MAX_MISMATCHES = 0;
 int MAX_LINE_LENGTH = 10000000;
 #define INTERVAL_FILE "index.bwn"
 char OUTPUT_FILE[100];
@@ -318,7 +318,7 @@ struct FMidx *getIndex(int *IseqCount)
                         char *number;
                         number = strtok(temp," ");
                         tempIndex[i].C[0] = 0;
-                        for(j = 1; j < 6; j++)
+                        for(j = 1; j < 5; j++)
                         {
                                 number = strtok(NULL," ");
                                 tempIndex[i].C[j] = atoi(number);
@@ -415,17 +415,21 @@ int ***calculateD(struct FMidx *index,int isc, struct input query,int qsc)
 		for(z = 0; z < isc; z++)
 		{
 			temp[i][z] = (int *) malloc(query.length[i]*sizeof(int));
-			int low = 2;
-			int high = index[z].length;
+			int low = 1;
+			int high = index[z].length - 1;
 			int d = 0;
 			for(j = 0; j < query.length[i]; j++)
 			{
-				low = index[z].C[baseMap(query.sequence[i][j])] + index[z].R[baseMap(query.sequence[i][j])][low-2] +1;
-				high = index[z].C[baseMap(query.sequence[i][j])] + index[z].R[baseMap(query.sequence[i][j])][high-1];
-				if(low > high)
+//				printf("j: %d\n",j);
+				int k = index[z].C[baseMap(query.sequence[i][j])-1] + index[z].R[baseMap(query.sequence[i][j])][low-1] + 1;
+				int l = index[z].C[baseMap(query.sequence[i][j])-1] + index[z].R[baseMap(query.sequence[i][j])][high];
+				if(index[z].transform[high] == query.sequence[i][j]){k = k - 1;}
+//				printf("%d + %d + 1\n",index[z].C[baseMap(query.sequence[i][j])-1],index[z].R[baseMap(query.sequence[i][j])][k-1]);
+//				printf("%d + %d\n",index[z].C[baseMap(query.sequence[i][j])-1],index[z].R[baseMap(query.sequence[i][j])][l]);
+				if(k > l)
 				{
-					low = 2;
-					high = index[z].length;
+					low = 1;
+					high = index[z].length - 1;
 					d = d + 1;
 				}
 				temp[i][z][j] = d;
@@ -445,11 +449,7 @@ struct results **inexactSearch(struct input query,int qsc,struct FMidx *index,in
 		temp[i] = (struct results *) malloc(isc*sizeof(struct results));
 		for(j = 0; j < isc; j++)//isc
 		{
-			temp[i][j].match = (struct matches *) malloc(sizeof(struct matches));
-			temp[i][j].match->low = 0;
-			temp[i][j].match->high = 0;
-			temp[i][j].match->next = NULL;
-//			printf("query:%s index:%d\n",query.sequence[i],index[j].length);
+			temp[i][j].match = NULL;
 			temp[i][j].match = inexRecur(index[j],D[i][j],query.sequence[i],query.length[i]-1,MAX_MISMATCHES,1,index[j].length-1);
 		}
 	}
@@ -458,11 +458,10 @@ struct results **inexactSearch(struct input query,int qsc,struct FMidx *index,in
 
 struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high)
 {
-	printf("D[i]:%d i:%d z:%d k:%d l:%d\n",D[i],i,d,low,high);
+//	printf("D[i]:%d i:%d z:%d k:%d l:%d\n",D[i],i,d,low,high);
 	struct matches *match = (struct matches *) malloc(sizeof(struct matches));
 	match->next = NULL;
-	struct matches *results = (struct matches *) malloc(sizeof(struct matches));
-	results->next = NULL;
+	struct matches *results = NULL;
 	if(i < 0)
 	{
 		if(d < D[0]){ return NULL;}	
@@ -475,72 +474,43 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 	{
 		match->low = low;
 		match->high = high;
-	//	printf("MATCH\tk:%d l:%d\n",low,high);
 		return match;
 	}
 	match = inexRecur(index,D,W,i-1,d-1,low,high); //gap in index seq
-	if(match != NULL){ /*printf("D[i]:%d i:%d z:%d k:%d l:%d\n",D[i],i,d,low,high);printf("1\n");*/results = getUnion(match,results);}
-	
+	if(match != NULL){ results = getUnion(match,results);}
 	match = NULL;
 	int j;
-	for(j = 1;j < 5; j++)
+	for(j = 0;j < 4; j++)
 	{
-		low = index.C[j] + index.O[j][low-1] + 1;
-		high = index.C[j] + index.O[j][high];
-		if(low <= high)
+		//printf("low: %d\thigh: %d\n",low,high);
+		//printf("j: %d\n",j);
+		int k = index.C[j] + index.O[j+1][low-1] + 1;
+		//printf("k = %d + %d + 1\n",index.C[j],index.O[j+1][low-1]);
+		int l = index.C[j] + index.O[j+1][high];
+		//printf("l = %d + %d\n",index.C[j],index.O[j+1][high]);
+		//if(index.transform[0] == revBaseMap(j+1) && low == 1 )k = k - 1;
+		if(k <= l)
 		{
-			match = inexRecur(index,D,W,i,d-1,low,high); //gap in query
-			if(match != NULL){ /*printf("D[i]:%d i:%d z:%d k:%d l:%d\n",D[i],i,d,low,high);printf("2\n");*/results = getUnion(match,results);}
+		        match = inexRecur(index,D,W,i,d-1,k,l); //gap in query
+			if(match != NULL){results = getUnion(match,results);}
 			match = NULL;
-			if(revBaseMap(j) == W[i]) //match
+			if(revBaseMap(j+1) == W[i]) //match
 			{
-				match = inexRecur(index,D,W,i-1,d,low,high);
-	//			printf("THISk:%d l:%d\n",match->low,match->high);
-				if(match != NULL){/* printf("D[i]:%d i:%d z:%d k:%d l:%d\n",D[i],i,d,low,high);printf("3\n");*/results = getUnion(match,results);}
-	//			printf("THATk:%d l:%d\n",results->low,results->high);
+				match = inexRecur(index,D,W,i-1,d,k,l);
+				if(match != NULL){ results = getUnion(match,results);}
 				match = NULL;
 			}
 			else //mismatch
 			{
-				match = inexRecur(index,D,W,i-1,d-1,low,high);
-				if(match != NULL){ /*printf("D[i]:%d i:%d z:%d k:%d l:%d\n",D[i],i,d,low,high);printf("4\n");*/results = getUnion(match,results);}
+				match = inexRecur(index,D,W,i-1,d-1,k,l);
+				if(match != NULL){ results = getUnion(match,results);}
 				match = NULL;
 			}
 		}
 	}
-	//printf("k:%d l:%d\n",results->low,results->high);
 	return results;
 }
-/*
-struct matches *append(struct matches *match, struct matches *results)
-{
-	if(results == NULL){return match;}
-	if(match == NULL){return results;}
-	
-	struct matches *head = results;
-	struct matches *temp = (struct matches *) malloc(sizeof(struct matches));
-	printf("k:%d l:%d\n",match->low,match->high);
-	while(match != NULL)
-	{
-		while(results->next != NULL)
-		{
-			if(match->low == results->low && match->high == results->high)
-			{
-				temp = match;
-				match = match->next;
-				free(temp);
-			}
-			results = results->next;
-		}
-		results = match;
-		printf("Hk:%d l:%d\n",results->low,results->high);
-		results = head;
-		printf("Jk:%d l:%d\n",results->low,results->high);
-		match = match->next;
-	}
-	return head;
-}
-*/
+
 struct matches *getUnion(struct matches *head1, struct matches *head2)
 {
     	struct matches *result = NULL;

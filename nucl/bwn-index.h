@@ -19,7 +19,7 @@ struct FMidx
 {
     	int **O;
 	int **R;
-    	int C[6];
+    	int C[5];
 };
 
 struct suffix **buildReverseSuffixArray(struct input query,int seqCount);

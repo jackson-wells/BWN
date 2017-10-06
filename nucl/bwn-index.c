@@ -20,7 +20,7 @@ void printSuffixArray(struct suffix **m,int seqCount, int *seqLength)
 		/*printf("\n%s\n",m[i][0].name);*/
 		for(j=0; j < seqLength[i]; j++)
 		{
-			printf("%d\t%d\t%s\n",j+1,m[i][j].pos,m[i][j].string);
+			printf("%d\t%d\t%s\n",j,m[i][j].pos-1,m[i][j].string);
 		}
 	}
 	printf("\n");
@@ -531,19 +531,19 @@ struct FMidx *calculateInterval(char **transform, int *seqLength,int seqCount, c
 			index[i].R[j] = (int *) malloc(seqLength[i]*sizeof(int));
 			index[i].R[j] = calculateO(revTransform[i],seqLength[i],j);
            		index[i].O[j] = calculateO(transform[i],seqLength[i],j);
-			index[i].C[5] = seqLength[i]-1;
+			index[i].C[4] = seqLength[i]-1;
 //			index[i].C[j] = index[i].O[j][seqLength[i]-1];
-			if(j == 0)
+//			if(j == 0)
+//			{
+//				index[i].C[j] = 0;
+//			}
+			if(j == 0)				//Base Cases covered to decrease runtime
 			{
 				index[i].C[j] = 0;
 			}
-			else if(j == 1)				//Base Cases covered to decrease runtime
+			else if(j < 4)
 			{
-				index[i].C[j] = 1;
-			}
-			else
-			{
-            			index[i].C[j] = calculateC(transform[i],seqLength[i],j);
+            			index[i].C[j] = calculateC(transform[i],seqLength[i],j+1);
 			}
         	}
     	}
@@ -586,7 +586,7 @@ int calculateC(char *sequence, int seqLength,int letterValue)
                 	count++;
             	}
         }
-    	return count;
+    	return count -1;
 }
 
 
@@ -620,7 +620,7 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
 		{
 			fprintf(f,"%d ",m[i][q].pos);
 		}
-                fprintf(f,"\nt:%s\nc:%d %d %d %d %d %d\n",transform[i],index[i].C[0],index[i].C[1],index[i].C[2],index[i].C[3],index[i].C[4],index[i].C[5]);
+                fprintf(f,"\nt:%s\nc:%d %d %d %d %d\n",transform[i],index[i].C[0],index[i].C[1],index[i].C[2],index[i].C[3],index[i].C[4]);
                 for(j= 0; j < 5; j++)
                 {
 			fprintf(f,"o:");
