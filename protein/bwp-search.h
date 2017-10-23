@@ -25,6 +25,7 @@ struct matches
 	int low;
 	int high;
 	struct matches *next;
+	int score;
 };
 
 struct output 
@@ -43,8 +44,8 @@ struct results
 extern char INTERVAL_FILE[];
 
 struct matches *getUnion(struct matches *head1, struct matches *head2);
-void push(struct matches** head_ref, int k,int l);
-int isPresent(struct matches *head, int k, int l);
+void push(struct matches** head_ref, int k,int l,int score);
+int isPresent(struct matches *head, int k, int l,int score);
 int *getLength(int seqCount);
 int baseMap(char temp);
 void printResults(struct output **out, int qsc, int isc,struct FMidx *index);
@@ -60,8 +61,8 @@ int *getSeqLength(char *fileName,int seqCount,int charCount);
 int getSeqCount(char *fileName);
 char *removePrefix(char *query);
 int ***calculateD(struct FMidx *index,int isc,struct input query,int qsc);
-struct results **inexactSearch(struct input query,int QseqCount,struct FMidx *index,int IseqCount,int ***D);
-struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high);
+struct results **inexactSearch(struct input query,int QseqCount,struct FMidx *index,int IseqCount,int ***D,int subMax[20][20]);
+struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high,int score,int subMax[20][20]);
 char revBaseMap(int temp);
 void printInResults(struct results **out,int qsc,int isc);
 struct matches *pointToTail(struct matches *match);

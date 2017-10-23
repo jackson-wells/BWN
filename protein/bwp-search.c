@@ -506,9 +506,10 @@ int ***calculateD(struct FMidx *index,int isc, struct input query,int qsc)
 	return temp;
 }
 
-struct results **inexactSearch(struct input query,int qsc,struct FMidx *index,int isc,int ***D)
+struct results **inexactSearch(struct input query,int qsc,struct FMidx *index,int isc,int ***D,int subMax[20][20])
 {
 	int i,j;
+	int score = 0;
 	struct results **temp = (struct results **) malloc(qsc*sizeof(struct results *));
 	for(i = 0; i < qsc; i++)
 	{
@@ -516,13 +517,13 @@ struct results **inexactSearch(struct input query,int qsc,struct FMidx *index,in
 		for(j = 0; j < isc; j++)//isc
 		{
 			temp[i][j].match = NULL;
-			temp[i][j].match = inexRecur(index[j],D[i][j],query.sequence[i],query.length[i]-1,MAX_MISMATCHES,1,index[j].length-1);
+			temp[i][j].match = inexRecur(index[j],D[i][j],query.sequence[i],query.length[i]-1,MAX_MISMATCHES,1,index[j].length-1,score,subMax);
 		}
 	}
 	return temp;
 }
 
-struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high)
+struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high,int score,int subMax[20][20])
 {
 	struct matches *match = (struct matches *) malloc(sizeof(struct matches));
 	match->next = NULL;
@@ -539,9 +540,10 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 	{
 		match->low = low;
 		match->high = high;
+		match->score = score;
 		return match;
 	}
-	match = inexRecur(index,D,W,i-1,d-1,low,high); //gap in index seq
+	match = inexRecur(index,D,W,i-1,d-1,low,high,score-4,subMax); //gap in index seq
 	if(match != NULL){ results = getUnion(match,results);}
 	match = NULL;
 	int j;
@@ -552,18 +554,18 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 		if(index.transform[0] == revBaseMap(j) && low == 1 && (high == index.length-1)){k = k - 1;}
 		if(k <= l)
 		{
-		        match = inexRecur(index,D,W,i,d-1,k,l); //gap in query
+		        match = inexRecur(index,D,W,i,d-1,k,l,score-4,subMax); //gap in query
 			if(match != NULL){results = getUnion(match,results);}
 			match = NULL;
 			if(revBaseMap(j) == W[i]) //match
 			{
-				match = inexRecur(index,D,W,i-1,d,k,l);
+				match = inexRecur(index,D,W,i-1,d,k,l,(score + subMax[j][baseMap(W[i])]),subMax);
 				if(match != NULL){ results = getUnion(match,results);}
 				match = NULL;
 			}
 			else //mismatch
 			{
-				match = inexRecur(index,D,W,i-1,d-1,k,l);
+				match = inexRecur(index,D,W,i-1,d-1,k,l,(score + subMax[revBaseMap(j)][baseMap(W[i])]),subMax);
 				if(match != NULL){ results = getUnion(match,results);}
 				match = NULL;
 			}
@@ -578,30 +580,31 @@ struct matches *getUnion(struct matches *head1, struct matches *head2)
     	struct matches *t1 = head1, *t2 = head2;
 	while (t1 != NULL)
     	{
-        	push(&result, t1->low,t1->high);
+        	push(&result, t1->low,t1->high,t1->score);
         	t1 = t1->next;
     	}
 	while (t2 != NULL)
     	{
-      		if(!isPresent(result, t2->low,t2->high))
+      		if(!isPresent(result, t2->low,t2->high,t2->score))
 		{
-            		push(&result, t2->low,t2->high);
+            		push(&result, t2->low,t2->high,t2->score);
 		}
         	t2 = t2->next;
     	}
     	return result;
 }
 
-void push(struct matches** head_ref, int k,int l)
+void push(struct matches** head_ref, int k,int l,int score)
 {
     	struct matches *new_node = (struct matches *) malloc(sizeof(struct matches));
     	new_node->low = k;
 	new_node->high = l;
+	new_node->score = score;
     	new_node->next = (*head_ref);
     	(*head_ref) = new_node;
 }
 
-int isPresent(struct matches *head, int k, int l)
+int isPresent(struct matches *head, int k, int l,int score)
 {
     struct matches *t = head;
     while (t != NULL)
@@ -732,7 +735,7 @@ void printInResults(struct results **out,int qsc,int isc)
 				printf("query:%d\tindex:%d\n",i+1,j+1);
 				while(temp!=NULL)
 				{
-					printf("k: %d\tl: %d\n",temp->low,temp->high);
+					printf("score: %d\nk: %d\tl: %d\n",temp->score,temp->low,temp->high);
 					
 					temp = temp->next;
 				}
@@ -747,12 +750,13 @@ int main(int argc, char *argv[])
 {
 	int QseqCount = 0;
 	int IseqCount = 0;
+	int subMax[20][20] = {4,0,-2,-1,-2,0,-2,-1,-1,-1,-1,-2,-1,-1,-1,1,0,0,-3,-2,0,9,-3,-4,-2,-3,-3,-1,-3,-1,-1,-3,-3,-3,-3,-1,-1,-1,-2,-2,-2,-3,6,2,-3,-1,-1,-3,-1,-4,-3,1,-1,0,-2,0,-1,-3,-4,-3,-1,-4,2,5,-3,-2,0,-3,1,-3,-2,0,-1,2,0,0,-1,-2,-3,-2,-2,-2,-3,-3,6,-3,-1,0,-3,0,0,-3,-4,-3,-3,-2,-2,-1,1,3,0,-3,-1,-2,-3,6,-2,-4,-2,-4,-3,0,-2,-2,-2,0,-2,-3,-2,-3,-2,-3,-1,0,-1,-2,8,-3,-1,-3,-2,1,-2,0,0,-1,-2,-3,-2,2,-1,-1,-3,-3,0,-4,-3,4,-3,2,1,-3,-3,-3,-3,-2,-1,3,-3,-1,-1,-3,-1,1,-3,-2,-1,-3,5,-2,-1,0,-1,1,2,0,-1,-2,-3,-2,-1,-1,-4,-3,0,-4,-3,2,-2,4,2,-3,-3,-2,-2,-2,-1,1,-2,-1,-1,-1,-3,-2,0,-3,-2,1,-1,2,5,-2,-2,0,-1,-1,-1,1,-1,-1,-2,-3,1,0,-3,0,1,-3,0,-3,-2,6,-2,0,0,1,0,-3,-4,-2,-1,-3,-1,-1,-4,-2,-2,-3,-1,-3,-2,-2,7,-1,-2,-1,-1,-2,-4,-3,-1,-3,0,2,-3,-2,0,-3,1,-2,0,0,-1,5,1,0,-1,-2,-2,-1,-1,-3,-2,0,-3,-2,0,-3,2,-2,-1,0,-2,1,5,-1,-1,-3,-3,-2,1,-1,0,0,-2,0,-1,-2,0,-2,-1,1,-1,0,-1,4,1,-2,-3,-2,0,-1,-1,-1,-2,-2,-2,-1,-1,-1,-1,0,-1,-1,-1,1,5,0,-2,-2,0,-1,-3,-2,-1,-3,-3,3,-2,1,1,-3,-2,-2,-3,-2,0,4,-3,-1,-3,-2,-4,-3,1,-2,-2,-3,-3,-2,-1,-4,-4,-2,-3,-3,-2,-3,11,2,-2,-2,-3,-2,3,-3,2,-1,-2,-1,-1,-2,-3,-1,-2,-2,-2,-1,2,7};
 	struct input query = manageInputs(argv,argc,&QseqCount);
         struct FMidx *index = getIndex(&IseqCount);
 	int ***D = calculateD(index,IseqCount,query,QseqCount);
 	//Search
 //	struct output **out = search(query,QseqCount,index,IseqCount);
-	struct results **out = inexactSearch(query,QseqCount,index,IseqCount,D);
+	struct results **out = inexactSearch(query,QseqCount,index,IseqCount,D,subMax);
 	//Output
 	//outputToFile(out,QseqCount,IseqCount,index,query);
 //	printResults(out,QseqCount,IseqCount,index);
