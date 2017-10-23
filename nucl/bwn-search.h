@@ -9,7 +9,7 @@ struct FMidx
 	int length;
     	int **O;
 	int **R;
-    	int C[6];
+    	int C[4];
 };
 
 struct input

@@ -19,7 +19,7 @@ struct FMidx
 {
     	int **O;
 	int **R;
-    	int C[5];
+    	int C[4];
 };
 
 extern char OUTPUT_FILE[]; 
@@ -56,5 +56,8 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m,char **t
 void printInt(struct FMidx *index, int seqCount,int *seqLength);
 void mergeSort(int low, int high,struct suffix **m,int seqNumber);
 void Merge(int low,int mid, int high, struct suffix **m,int seqNumber);
+int fileExists(char *temp);
+int extensionExists(char *temp);
+
 
 #endif

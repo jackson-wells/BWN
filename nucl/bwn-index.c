@@ -48,7 +48,7 @@ void printInt(struct FMidx *index,int seqCount,int *seqLength)
             	printf("C(\"G\") of seq %d\t%d\n",i+1,index[i].C[3]);
             	printf("C(\"T\") of seq %d\t%d\n\n",i+1,index[i].C[4]);
 		printf("O():\n");
-		for(j= 0; j < 5; j++)
+		for(j= 0; j <4; j++)
 		{
 			for(z= 0; z < seqLength[i]; z++)
 			{
@@ -83,7 +83,7 @@ void initializeSuffixArray(struct suffix **m,int *seqLength,int seqCount)
 {
 	int i,j;
 	for(i = 0; i < seqCount;i++)
-	{
+{
 		for(j = 0; j < seqLength[i]; j++)
         	{
         	        m[i][j].string = (char *) malloc(seqLength[i] * sizeof(char));
@@ -156,6 +156,28 @@ void freeSuffixArray(struct suffix **m,int seqCount,int *seqLength)
 
 
 /* HELPER FUNCTIONS */
+
+/* fileExists
+	
+	Purpose: check that supplied filehandles are accesible and existing files 
+	Returns: true or false in integer form
+
+*/
+
+int fileExists(char *temp)
+{
+
+        FILE *file = fopen(temp, "r");
+        if (file)
+        {
+                fclose(file);
+                return 1;
+        }
+        else
+        {
+                return 0;
+        }
+}
 
 /*  seqCount
 
@@ -293,8 +315,16 @@ struct input manageInputs(int argc, char *argv[],int *seqCount) /*handles initia
 	                	exit(0);
 	
 	            	case 'f':
-		                handleF(&query,optarg);
-		                *seqCount = getSeqCount(optarg);
+				if(fileExists(optarg))
+                                {
+		                	handleF(&query,optarg);
+		                	*seqCount = getSeqCount(optarg);
+				}
+				else
+				{
+                                        printf("%s is not a valid file, exiting\n",optarg);
+					exit(0);
+                                }
 		                break;
 	
 		        case 's' :
@@ -523,27 +553,21 @@ struct FMidx *calculateInterval(char **transform, int *seqLength,int seqCount, c
     	int i,j,z;
     	for(i = 0; i < seqCount; i++)
     	{
-		index[i].O = (int **) malloc(5*sizeof(int **));
-		index[i].R = (int **) malloc(5*sizeof(int **));
-        	for(j = 0; j < 5; j++) //looping thru each char ($,A,C,G,T)
+		index[i].O = (int **) malloc(4*sizeof(int **));
+		index[i].R = (int **) malloc(4*sizeof(int **));
+        	for(j = 0; j < 4; j++) //looping thru each char ($,A,C,G,T)
         	{
 			index[i].O[j] = (int *) malloc(seqLength[i]*sizeof(int));
 			index[i].R[j] = (int *) malloc(seqLength[i]*sizeof(int));
 			index[i].R[j] = calculateO(revTransform[i],seqLength[i],j);
            		index[i].O[j] = calculateO(transform[i],seqLength[i],j);
-			index[i].C[4] = seqLength[i]-1;
-//			index[i].C[j] = index[i].O[j][seqLength[i]-1];
-//			if(j == 0)
-//			{
-//				index[i].C[j] = 0;
-//			}
 			if(j == 0)				//Base Cases covered to decrease runtime
 			{
 				index[i].C[j] = 0;
 			}
-			else if(j < 4)
+			else
 			{
-            			index[i].C[j] = calculateC(transform[i],seqLength[i],j+1);
+            			index[i].C[j] = calculateC(transform[i],seqLength[i],j);
 			}
         	}
     	}
@@ -552,11 +576,10 @@ struct FMidx *calculateInterval(char **transform, int *seqLength,int seqCount, c
 
 int baseMap(char temp)
 {
-	if(temp == '$') return 0;
-	else if(temp == 'A') return 1;
-	else if(temp == 'C') return 2;
-	else if(temp == 'G') return 3;
-	else if(temp == 'T') return 4;
+	if(temp == 'A') return 0;
+	else if(temp == 'C') return 1;
+	else if(temp == 'G') return 2;
+	else if(temp == 'T') return 3;
 }
 
 int *calculateO(char *sequence,int seqLength,int letterValue)
@@ -586,10 +609,21 @@ int calculateC(char *sequence, int seqLength,int letterValue)
                 	count++;
             	}
         }
-    	return count -1;
+    	return count;
 }
 
-
+int extensionExists(char *temp)
+{
+	int i = 0;
+	for(i = 0; i < strlen(temp)-1; i++)
+	{
+		if(temp[i] == '.')
+		{
+			return 0;
+		}
+	}
+	return 1;
+}
 
 /* OUTPUT FUNCTIONS */
 
@@ -602,7 +636,10 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
 	}
 	else
 	{
-		//strcat(OUTPUT_FILE,".bwn");
+		if(extensionExists(OUTPUT_FILE))
+		{
+			strcat(OUTPUT_FILE,".bwn");
+		}
 		f = fopen(OUTPUT_FILE,"w");
 	}
 	/*write each instance of M to a file*/
@@ -621,7 +658,7 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
 			fprintf(f,"%d ",m[i][q].pos);
 		}
                 fprintf(f,"\nt:%s\nc:%d %d %d %d %d\n",transform[i],index[i].C[0],index[i].C[1],index[i].C[2],index[i].C[3],index[i].C[4]);
-                for(j= 0; j < 5; j++)
+                for(j= 0; j < 4; j++)
                 {
 			fprintf(f,"o:");
                         for(z= 0; z < query.length[i]; z++)
@@ -630,7 +667,7 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
                         }
                         fprintf(f,"\n");
                 }
-		for(j= 0; j < 5; j++)
+		for(j= 0; j < 4; j++)
                 {
                         fprintf(f,"r:");
                         for(z= 0; z < query.length[i]; z++)

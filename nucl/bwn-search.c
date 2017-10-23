@@ -126,20 +126,18 @@ void read_fasta(char *fileName, struct input *query)
 
 char revBaseMap(int temp)
 {
-        if(temp == 0){ return '$';}
-        else if(temp == 1){return 'A';}
-        else if(temp == 2){return 'C';}
-        else if(temp == 3){return 'G';}
-        else if(temp == 4){return 'T';}
+        if(temp == 0){return 'A';}
+        else if(temp == 1){return 'C';}
+        else if(temp == 2){return 'G';}
+        else if(temp == 3){return 'T';}
 }
 
 int baseMap(char temp)
 {
-        if(temp == '$') return 0;
-        else if(temp == 'A') return 1;
-        else if(temp == 'C') return 2;
-        else if(temp == 'G') return 3;
-        else if(temp == 'T') return 4;
+        if(temp == 'A') return 0;
+        else if(temp == 'C') return 1;
+        else if(temp == 'G') return 2;
+        else if(temp == 'T') return 3;
 }
 
 void handleS(struct input *query, char *sequence)
@@ -298,9 +296,9 @@ struct FMidx *getIndex(int *IseqCount)
     	int i,j;
 	for(i = 0; i < seqCount; i++)
 	{
-		tempIndex[i].O = (int **) malloc(5 * sizeof(int *));
-		tempIndex[i].R = (int **) malloc(5 * sizeof(int *));
-		for(j = 0; j < 5; j++)
+		tempIndex[i].O = (int **) malloc(4 * sizeof(int *));
+		tempIndex[i].R = (int **) malloc(4 * sizeof(int *));
+		for(j = 0; j < 4; j++)
 		{
 			tempIndex[i].R[j] = (int *) malloc(seqLength[i] * sizeof(int));
 			tempIndex[i].O[j] = (int *) malloc(seqLength[i] * sizeof(int));
@@ -358,7 +356,7 @@ struct FMidx *getIndex(int *IseqCount)
                         char *number;
                         number = strtok(temp," ");
                         tempIndex[i].C[0] = 0;
-                        for(j = 1; j < 5; j++)
+                        for(j = 1; j < 4; j++)
                         {
                                 number = strtok(NULL," ");
                                 tempIndex[i].C[j] = atoi(number);
@@ -377,7 +375,7 @@ struct FMidx *getIndex(int *IseqCount)
                                	tempIndex[i].O[oCount][z] = atoi(number);
 			}
 			oCount++;
-			if(oCount >= 5)
+			if(oCount >= 4)
 			{
 				oCount = 0;
 			}
@@ -395,7 +393,7 @@ struct FMidx *getIndex(int *IseqCount)
                                 tempIndex[i].R[rCount][z] = atoi(number);
                         }
                         rCount++;
-                        if(rCount >= 5)
+                        if(rCount >= 4)
                         {
                                 rCount = 0;
                                 i++;
@@ -460,12 +458,9 @@ int ***calculateD(struct FMidx *index,int isc, struct input query,int qsc)
 			int d = 0;
 			for(j = 0; j < query.length[i]; j++)
 			{
-//				printf("j: %d\n",j);
-				int k = index[z].C[baseMap(query.sequence[i][j])-1] + index[z].R[baseMap(query.sequence[i][j])][low-1] + 1;
-				int l = index[z].C[baseMap(query.sequence[i][j])-1] + index[z].R[baseMap(query.sequence[i][j])][high];
-				if(index[z].transform[high] == query.sequence[i][j]){k = k - 1;} //remove later
-//				printf("%d + %d + 1\n",index[z].C[baseMap(query.sequence[i][j])-1],index[z].R[baseMap(query.sequence[i][j])][k-1]);
-//				printf("%d + %d\n",index[z].C[baseMap(query.sequence[i][j])-1],index[z].R[baseMap(query.sequence[i][j])][l]);
+				int k = index[z].C[baseMap(query.sequence[i][j])] + index[z].R[baseMap(query.sequence[i][j])][low-1] + 1;
+				int l = index[z].C[baseMap(query.sequence[i][j])] + index[z].R[baseMap(query.sequence[i][j])][high];
+				if(index[z].transform[high] == query.sequence[i][j]){k = k - 1;}
 				if(k > l)
 				{
 					low = 1;
@@ -498,7 +493,6 @@ struct results **inexactSearch(struct input query,int qsc,struct FMidx *index,in
 
 struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high)
 {
-	//printf("D[i]:%d i:%d z:%d k:%d l:%d\n",D[i],i,d,low,high);
 	struct matches *match = (struct matches *) malloc(sizeof(struct matches));
 	match->next = NULL;
 	struct matches *results = NULL;
@@ -522,19 +516,15 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 	int j;
 	for(j = 0;j < 4; j++)
 	{
-		//printf("low: %d\thigh: %d\n",low,high);
-		//printf("j: %d\n",j);
-		int k = index.C[j] + index.O[j+1][low-1] + 1;
-		//printf("k = %d + %d + 1\n",index.C[j],index.O[j+1][low-1]);
-		int l = index.C[j] + index.O[j+1][high];
-		//printf("l = %d + %d\n",index.C[j],index.O[j+1][high]);
-		if(index.transform[0] == revBaseMap(j+1) && low == 1 && (high == index.length-1)){k = k - 1;}
+		int k = index.C[j] + index.O[j][low-1] + 1;
+		int l = index.C[j] + index.O[j][high];
+		if(index.transform[0] == revBaseMap(j) && low == 1 && (high == index.length-1)){k = k - 1;}
 		if(k <= l)
 		{
 		        match = inexRecur(index,D,W,i,d-1,k,l); //gap in query
 			if(match != NULL){results = getUnion(match,results);}
 			match = NULL;
-			if(revBaseMap(j+1) == W[i]) //match
+			if(revBaseMap(j) == W[i]) //match
 			{
 				match = inexRecur(index,D,W,i-1,d,k,l);
 				if(match != NULL){ results = getUnion(match,results);}
@@ -614,7 +604,7 @@ void printResults(struct output **out, int qsc, int isc,struct FMidx *index)
 		printf("Query Sequence: %d\n",i+1);
 		for(j = 0; j < isc; j++)
 		{
-			printf("\tDatabase Sequence: %d\n",j+1);
+			printf("\tDatabase Sequence: %d\n",j);
 			if(out[i][j].low == 0 && out[i][j].high == 0)
 			{
 				printf("\t\tNot Found\n\n");
