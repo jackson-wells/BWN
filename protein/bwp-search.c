@@ -213,7 +213,7 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
                 switch (c)
                 {
                         case 'h':
-                                printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-search <options>\"\n\nOptions:\n\n-f\t\tFor query of a fasta file\n-s\t\tFor query of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n-d\t\tTo designate the number of allowed mismatches\n-i\t\tTo specify a custom index file\n\n");
+                                printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-search <options>\"\n\nOptions:\n\n-f\t\tFor query of a fasta file\n-s\t\tFor query of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n-d\t\tTo designate the number of allowed mismatches\n-i\t\tTo specify a custom index file\n-v\t\tTo supply output to screen\n\n");
                                 exit(0);
 
                         case 'f':
