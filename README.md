@@ -12,7 +12,7 @@
  - E-values of alignments
 
 ### To Compile:
- 1. Clone this repository to your local machine
- 2. Run "make" in the protein or nucl directories, depending on what sequence files you plan to use
- 3. Excutables will now available in the directory that "make was run in
-    - Use "-h" during execution for additional help
+ 1. Clone this repository to your local machine.
+ 2. Run "make" in the protein or nucl directory. The decision between nucl and protein searches should depend upon the format of your sequence files.
+ 3. Excutables will now available in the directory that "make" was run in
+    - Use the "-h" flag during execution of programs for additional help
