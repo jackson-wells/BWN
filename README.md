@@ -1,4 +1,4 @@
-# Biological Sequence Search using the Burrows-Wheeler Transform
+# Bio-Sequence Search using the Burrows-Wheeler Transform
 
 ## Current Version:
  - Index and search protein or nucleotide sequences
@@ -12,7 +12,7 @@
  - E-values of alignments
 
 ### To Compile:
- 1. Clone this repository
- 2. Run "make" 
- 3. Excutables now available
+ 1. Clone this repository to your local machine
+ 2. Run "make" in the protein or nucl directories, depending on what sequence files you plan to use
+ 3. Excutables will now available in the directory that "make was run in
     - Use "-h" during execution for additional help
