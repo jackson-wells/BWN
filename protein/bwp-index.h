@@ -52,7 +52,7 @@ void deleteInputStruct(struct input query,int seqCount);
 struct FMidx *calculateInterval(char **transform, int *seqLength,int seqCount,char **revTransform);
 int *calculateO(char *sequence,int seqLength,int letterValue);
 int calculateC(char *sequence, int seqLength,int letterValue);
-void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m,char **transform,struct input query);
+void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m,char **transform,struct input query,char **revTransform);
 void printInt(struct FMidx *index, int seqCount,int *seqLength);
 void mergeSort(int low, int high,struct suffix **m,int seqNumber);
 void Merge(int low,int mid, int high, struct suffix **m,int seqNumber);
