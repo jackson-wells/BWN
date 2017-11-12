@@ -352,6 +352,11 @@ struct input manageInputs(int argc, char *argv[],int *seqCount) /*handles initia
 				
         	}
     	}
+	if(optind < argc)
+        {
+        	printf ("Non-option arguments supplied\n\nuse -h for usage statement\n");
+		exit(0);
+        }
     	return query;
 }
 
@@ -642,7 +647,7 @@ int extensionExists(char *temp)
 
 /* OUTPUT FUNCTIONS */
 
-void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **transform, struct input query)
+void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **transform, struct input query,char **revTransform)
 {
 	FILE *f;
 	if(strlen(OUTPUT_FILE) == 0) 
@@ -667,12 +672,13 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
 	fprintf(f,"n:%d\n\n",seqCount);
 	for(i = 0; i<seqCount;i++)
         {
-		fprintf(f,"d:%s\nl:%d\ns:",query.name[i],query.length[i]);
+//		query.sequence[i] = query.sequence[i]+2;
+		fprintf(f,"d:%s\nl:%d\nq:%s\ns:",query.name[i],query.length[i],query.sequence[i]+1);
 		for(q = 0; q < query.length[i]; q++)
 		{
 			fprintf(f,"%d ",m[i][q].pos);
 		}
-                fprintf(f,"\nt:%s\nc:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",transform[i],index[i].C[0],index[i].C[1],index[i].C[2],index[i].C[3],index[i].C[4],index[i].C[5],index[i].C[6],index[i].C[7],index[i].C[8],index[i].C[9],index[i].C[0],index[i].C[11],index[i].C[12],index[i].C[13],index[i].C[14],index[i].C[15],index[i].C[16],index[i].C[17],index[i].C[18],index[i].C[19]);
+                fprintf(f,"\nt:%s\nf:%s\nc:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",transform[i],revTransform[i],index[i].C[0],index[i].C[1],index[i].C[2],index[i].C[3],index[i].C[4],index[i].C[5],index[i].C[6],index[i].C[7],index[i].C[8],index[i].C[9],index[i].C[10],index[i].C[11],index[i].C[12],index[i].C[13],index[i].C[14],index[i].C[15],index[i].C[16],index[i].C[17],index[i].C[18],index[i].C[19]);
                 for(j= 0; j < 20; j++)
                 {
 			fprintf(f,"o:");
@@ -712,7 +718,7 @@ int main(int argc, char *argv[])
 	//printBwt(m,transform,seqCount);
 	struct FMidx *index = calculateInterval(transform,query.length,seqCount,revTransform);
 	//printInt(index,seqCount,query.length);
-	intervalToFile(index,seqCount,m,transform,query);
+	intervalToFile(index,seqCount,m,transform,query,revTransform);
     	deleteSuffixArray(m,seqCount,query.length);
     	deleteInputStruct(query,seqCount);
     	return 0;
