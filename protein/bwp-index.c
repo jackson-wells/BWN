@@ -6,7 +6,9 @@
 #include "bwp-index.h"
 #include <unistd.h>
 #include <math.h>
+#include <stdbool.h>
 
+bool verbose = false;
 int MAX_LINE_LENGTH = 10000000;
 char OUTPUT_FILE[] = "index.bwp";
 
@@ -305,12 +307,12 @@ struct input manageInputs(int argc, char *argv[],int *seqCount) /*handles initia
 		exit(0);
 	}
     	opterr = 0;
-    	while ((c = getopt (argc, argv, "hf:s:m:o:")) != -1) /*options must be added here to be recognized, options followed by : take in a parameter*/
+    	while ((c = getopt (argc, argv, "hvf:s:m:o:")) != -1) /*options must be added here to be recognized, options followed by : take in a parameter*/
     	{	
 	        switch (c)
 	        {
 	            	case 'h':
-	                	printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-index <options>\"\n\nOptions:\n\n-f\t\tFor query of a fasta file\n-s\t\tFor query of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tTo designate the output file name\n\n");
+	                	printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-index <options>\"\n\nOptions:\n\n-f\t\tFor query of a fasta file\n-s\t\tFor query of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tTo designate the output file name\n-v\t\tTo produce verbose output\n\n");
 	                	exit(0);
 	
 	            	case 'f':
@@ -330,6 +332,9 @@ struct input manageInputs(int argc, char *argv[],int *seqCount) /*handles initia
 		                handleS(&query,optarg);
 		                *seqCount = 1;
 		                break;
+			case 'v' :
+                                verbose = true;
+                                break;
 	
    		        case '?' :
 	                	if(optopt == 's')
@@ -712,7 +717,10 @@ int main(int argc, char *argv[])
 	struct input query = manageInputs(argc,argv,&seqCount);
 	struct suffix **m = buildSuffixArray(query,seqCount);
 	struct suffix **Rm = buildReverseSuffixArray(query,seqCount);
-	printSuffixArray(m,seqCount,query.length);
+	if(verbose)
+	{
+		printSuffixArray(m,seqCount,query.length);
+	}
 	char **transform = bwt(m,seqCount,query.length);	/*contains transforms of all query fastas*/
 	char **revTransform = bwt(Rm,seqCount,query.length);
 	//printBwt(m,transform,seqCount);
