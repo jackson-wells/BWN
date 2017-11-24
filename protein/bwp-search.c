@@ -8,6 +8,7 @@
 #include "bwp-search.h"
 #include <stdbool.h>
 
+bool silent = false;
 bool verbose = false;
 int MAX_MISMATCHES = 0;
 int MAX_LINE_LENGTH = 100000000;
@@ -186,7 +187,7 @@ void handleS(struct input *query, char *sequence)
     	*query = initializeInputStruct(seqC,seqL);
     	query->length[0] = seqL[0];
     	strcpy(query->sequence[0],sequence);
-	strcpy(query->name[0],"Command Line String Input");
+	strcpy(query->name[0],"String Input");
 }
 
 void handleF(struct input *query,char *fileName)
@@ -208,12 +209,12 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
                 exit(0);
         }
         opterr = 0;
-	while ((c = getopt (argc, argv, "vhf:s:m:o:d:i:")) != -1) /*options must be added here to be recognized, options followed by : take in a parameter*/
+	while ((c = getopt (argc, argv, "vShf:s:m:o:d:i:")) != -1) /*options must be added here to be recognized, options followed by : take in a parameter*/
         {
                 switch (c)
                 {
                         case 'h':
-                                printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-search <options>\"\n\nOptions:\n\n-f\t\tFor query of a fasta file\n-s\t\tFor query of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n-d\t\tTo designate the number of allowed mismatches\n-i\t\tTo specify a custom index file\n-v\t\tTo supply output to screen\n\n");
+                                printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-search <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta file as a query\n-s\t\tFor input of a string as a query\n-h\t\tFor this usage statement\n-S\t\tTo suppress all output to screen\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n-d\t\tTo designate the number of allowed mismatches\n-i\t\tTo specify a custom index file\n-v\t\tTo supply output to screen\n\n");
                                 exit(0);
 
                         case 'f':
@@ -267,13 +268,12 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
 				}
 				else
 				{
-					printf("%s is not a valid file\nDefaulting to index.bwp\n",optarg);
-					if(!fileExists("index.bwp"))
-                                	{
-						printf("index.bwp not found, exiting\n");
-						exit(0);
-					}
+					printf("%s is not a valid file\nExiting\n",optarg);
+					exit(0);
 				}
+				break;
+			case 'S' :
+				silent = true;
 				break;
                 }
         }
@@ -516,7 +516,10 @@ int ***calculateD(struct FMidx *index,int isc, struct input query,int qsc)
 			{
 				int k = index[z].C[baseMap(query.sequence[i][j])] + index[z].R[baseMap(query.sequence[i][j])][low-1] + 1;
 				int l = index[z].C[baseMap(query.sequence[i][j])] + index[z].R[baseMap(query.sequence[i][j])][high];
-				if(index[z].reverse[0] == query.sequence[i][j]){k = k - 1;}
+				if(index[z].reverse[0] == query.sequence[i][j])
+				{
+					k = k - 1;
+				}
 				if(k > l)
 				{
 					low = 1;
@@ -538,11 +541,12 @@ struct results **inexactSearch(struct input query,int qsc,struct FMidx *index,in
 	for(i = 0; i < qsc; i++)
 	{
 		temp[i] = (struct results *) malloc(isc*sizeof(struct results));
-		for(j = 0; j < isc; j++)//isc
+		for(j = 0; j < isc; j++)
 		{
 			temp[i][j].match = NULL;
 			char *traceBack = (char *) malloc(sizeof(char) * (MAX_MISMATCHES+query.length[i]));
 			temp[i][j].match = inexRecur(index[j],D[i][j],query.sequence[i],query.length[i]-1,MAX_MISMATCHES,1,index[j].length-1,0,1,traceBack,0);
+			temp[i][j].match = sortMatches(temp[i][j].match);
 		}
 	}
 	return temp;
@@ -584,18 +588,21 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 	{
 		int k = index.C[j] + index.O[j][low-1] + 1;
 		int l = index.C[j] + index.O[j][high];
-		if(index.transform[0] == revBaseMap(j) && low == 1 && (high == index.length-1)){k = k - 1;}
+		if(index.transform[0] == revBaseMap(j) && low == 1 && (high == index.length-1))
+		{
+			k = k - 1;
+		}
 		if(k <= l)
 		{
 			traceBack[tbIdx] = 'Y';
-		        match = inexRecur(index,D,W,i,d-1,k,l,getScore(j,baseMap(W[i]),tempS,tempP,3),3,traceBack,tbIdx+1); //GAP in queryi
+		        match = inexRecur(index,D,W,i,d-1,k,l,getScore(j,baseMap(W[i]),tempS,tempP,3),3,traceBack,tbIdx+1); //GAP in query
 			if(match != NULL){results = getUnion(match,results);}
 			match = NULL;
 			tempP = pState;
 			tempS = score;
-			traceBack[tbIdx] = 'M';
 			if(revBaseMap(j) == W[i]) //match
 			{
+				traceBack[tbIdx] = 'M';
 				match = inexRecur(index,D,W,i-1,d,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,traceBack,tbIdx+1);
 				if(match != NULL){ results = getUnion(match,results);}
 				match = NULL;
@@ -604,6 +611,7 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 			}
 			else //mismatch
 			{
+				traceBack[tbIdx] = 'U';
 				match = inexRecur(index,D,W,i-1,d-1,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,traceBack,tbIdx+1);
 				if(match != NULL){ results = getUnion(match,results);}
 				match = NULL;
@@ -626,10 +634,10 @@ struct matches *getUnion(struct matches *head1, struct matches *head2)
     	}
 	while (t2 != NULL)
     	{
-      		if(!isPresent(result, t2->low,t2->high))
-		{
+//      		if(!isPresent(result, t2->low,t2->high))
+//		{
             		push(&result, t2->low,t2->high,t2->score,t2->tb,t2->traceLength);
-		}
+//		}
 //		else //present but checking if score is better
 //		{
 //			getHighScore(result,t2->low,t2->high,t2->score,t2->tb,t2->traceLength);
@@ -692,6 +700,79 @@ struct matches *pointToTail(struct matches *match)
                 }
         }
 	return match;
+}
+
+struct matches *sortMatches(struct matches *match)
+{
+	mergeSortMatches(&match);
+	//Potentially more here
+	return match;	
+}
+
+void mergeSortMatches(struct matches** headRef)
+{
+    struct matches* head = *headRef;
+    struct matches* a;
+    struct matches* b;
+    if ((head == NULL) || (head -> next == NULL))
+    {
+        return;
+    }
+    frontbacksplit(head, &a, &b);
+    mergeSortMatches(&a);
+    mergeSortMatches(&b);
+    *headRef = sortedmergeMatch(a, b);
+}
+ 
+struct matches* sortedmergeMatch(struct matches* a, struct matches* b)
+{
+    struct matches* result = NULL;
+ 
+    if (a == NULL)
+        return(b);
+    else if (b == NULL)
+        return(a);
+ 
+    if ( a->score >= b->score)
+    {
+        result = a;
+        result->next = sortedmergeMatch(a->next, b);
+    }
+    else
+    {
+        result = b;
+        result->next = sortedmergeMatch(a, b->next);
+    }
+    return(result);
+}
+ 
+void frontbacksplit(struct matches* source, struct matches** frontRef, struct matches** backRef)
+{
+    struct matches* fast;
+    struct matches* slow;
+    if (source==NULL || source->next==NULL)
+    {
+        *frontRef = source;
+        *backRef = NULL;
+    }
+    else
+    {
+        slow = source;
+        fast = source -> next;
+        while (fast != NULL)
+        {
+            fast = fast -> next;
+            if (fast != NULL)
+            {
+                slow = slow -> next;
+                fast = fast -> next;
+            }
+	}
+    }
+ 
+    *frontRef = source;
+    *backRef = slow -> next;
+    slow -> next = NULL;
 }
 
 int getScore(int l1, int l2,int score, int p, int c)
@@ -808,7 +889,7 @@ void outputToFile(struct results **out, int qsc, int isc,struct FMidx *index,str
                 exit(1);
         }
         int i,j;
-	fprintf(f,"Query\tDatabase\tStart Pos\tEnd Pos\tScore\n----------------------------------------------------------------\n");
+	fprintf(f,"Database\tStart Pos\tEnd Pos\tQuery\tScore\n----------------------------------------------------------------\n");
         for(i = 0; i < qsc; i++)
         {
                 for(j = 0; j < isc; j++)
@@ -819,8 +900,8 @@ void outputToFile(struct results **out, int qsc, int isc,struct FMidx *index,str
                         {
                                 while(temp != NULL)
                                 {
-					fprintf(f,"%s\t%s\t",query.name[i],index[j].desc);
-                                        fprintf(f,"%d\t%d\t%d\n",index[j].SA[temp->low],query.length[i]+index[j].SA[temp->low]-1,temp->score);
+					fprintf(f,"%s\t",index[j].desc);
+                                        fprintf(f,"%d\t%d\t%s\t%d\n",index[j].SA[temp->low],query.length[i]+index[j].SA[temp->low]-1,query.name[i],temp->score);
                                         temp = temp->next;
                                 }
                         }
@@ -839,59 +920,124 @@ void printInResults(struct results **out,int qsc,int isc,struct FMidx *index, st
 		{
 			struct matches *temp = (struct matches *) malloc(sizeof(struct matches));
 			temp = out[i][j].match; //causing seg fault
+			printf("\nindex: %s\nquery: %s\n\n-----------------------------------------------\n\n",index[j].desc,query.name[i]);
 			if(temp!=NULL)
 			{
-				printf("\nindex: %s\nquery: %s\n\n",index[j].desc,query.name[i]);
 				while(temp!=NULL)
 				{
-					printf("Score: %d\n\n\t",temp->score);
+//					printf("tb:%s\n",temp->tb);
+					printf("Score: %d\n\nIndex\t",temp->score);
 					for(z = 0; z < temp->traceLength; z++)
 					{
-						if(temp->tb[z] == 'M')
+						if(z % 59 == 0 && z != 0)
 						{
-							printf("%c",index[j].sequence[index[j].SA[temp->low]+(z-1)]);
+							printf("\n");
 						}
-						else if(temp->tb[z] == 'X')
+						else
 						{
-							printf("-");
+							if(temp->tb[z] == 'M' || temp->tb[z] == 'U')
+							{
+								printf("%c",index[j].sequence[index[j].SA[temp->low]+(z-1-miss)]);
+							}
+							else if(temp->tb[z] == 'X')
+							{
+								printf("-");
+								miss++;
+							}
+							else if(temp->tb[z] == 'Y')
+                                                	{
+								printf("%c",index[j].sequence[index[j].SA[temp->low]+(z-1-miss)]);
+                                                	}	
 						}
-						else if(temp->tb[z] == 'Y')
-                                                {
-							printf("%c",index[j].sequence[index[j].SA[temp->low]+(z-1)]);
-                                                }
 					}
 					printf("\n\t");
+					int missX = 0;
+					int missY = 0;
 					for(z = 0; z < temp->traceLength; z++)
                                         {
-						printf("|");
+						if(z % 59 == 0 && z != 0)
+                                                {
+                                                        printf("\n");
+                                                }
+                                                else
+                                                {
+							if(query.sequence[i][z-missY] == index[j].sequence[index[j].SA[temp->low]+z-1-missX] && (temp->tb[z] != 'X' || temp->tb[z] != 'Y'))
+							{
+								printf("|");
+							}
+							else if(temp->tb[z] == 'X')
+							{
+								printf(" ");
+								missX++;
+							}
+							else if( temp->tb[z] == 'Y')
+							{
+								printf(" ");
+                                                                missY++;
+							}
+							else
+							{
+								printf(" ");
+							}
+						}
 					}
-					printf("\n\t");
+					printf("\nQuery\t");
 					miss = 0;
 					for(z = 0; z < temp->traceLength; z++)
                                         {
-                                                if(temp->tb[z] == 'M')
+						if(z % 59 == 0 && z != 0)
                                                 {
-                                                        printf("%c",query.sequence[i][z-miss]);
+                                                        printf("\n");
                                                 }
-                                                else if(temp->tb[z] == 'X')
+                                                else
                                                 {
-							printf("%c",query.sequence[i][z-miss]);
-                                                }
-                                                else if(temp->tb[z] == 'Y')
-                                                {
-							printf("-");
-							miss++;
-                                                }
+	                                                if(temp->tb[z] == 'M' || temp->tb[z] == 'U')
+	                                                {
+	                                                        printf("%c",query.sequence[i][z-miss]);
+	                                                }
+	                                                else if(temp->tb[z] == 'X')
+	                                                {
+								printf("%c",query.sequence[i][z-miss]);
+	                                                }
+	                                                else if(temp->tb[z] == 'Y')
+	                                                {
+								printf("-");
+								miss++;
+	                                                }
+						}
                                         }
-					printf("\n\nStart: %d\nEnd: %d\n\n",index[j].SA[temp->low],index[j].SA[temp->low]+temp->traceLength-1);
+					printf("\n\nStart: %d\nEnd: %d\n\n-----------------------------------------------\n\n",index[j].SA[temp->low],index[j].SA[temp->low]+temp->traceLength-1);
 					temp = temp->next;
 				}
+			}
+			else
+			{
+				printf("No Matches Found\n");
 			}
 		}
 	}	
 }
 
-
+void printKLs(struct results **out, int qsc, int isc)
+{
+	int i,j;
+	for(i = 0; i < qsc; i ++)
+	{
+		for(j = 0; j < isc; j++)
+		{
+			printf("index: %d\tquery: %d\n",j+1,i+1);
+			struct matches *temp = (struct matches *) malloc(sizeof(struct matches));
+                        temp = out[i][j].match;
+			if(temp!=NULL)
+                        {
+                                while(temp!=NULL)
+                                {
+					printf("k: %d\tl: %d\n",temp->low,temp->high);
+				}
+			}
+		}
+	}
+}
 
 /*MAIN FUNCTION*/
 
@@ -909,6 +1055,10 @@ int main(int argc, char *argv[])
 	outputToFile(out,QseqCount,IseqCount,index,query);
 //	printResults(out,QseqCount,IseqCount,index);
 	if(verbose)
+	{
+		printKLs(out,QseqCount,IseqCount);
+	}
+	if(!silent)
 	{
 		printInResults(out,QseqCount,IseqCount,index,query);
 	}

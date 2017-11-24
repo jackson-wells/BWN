@@ -74,5 +74,10 @@ void printInResults(struct results **out,int qsc,int isc,struct FMidx *index, st
 struct matches *pointToTail(struct matches *match);
 struct matches *append(struct matches *match, struct matches *results);
 int fileExists(char *temp);
+void printKLs(struct results **out, int qsc, int isc);
+void frontbacksplit(struct matches* source, struct matches** frontRef, struct matches** backRef);
+struct matches* sortedmergeMatch(struct matches* a, struct matches* b);
+void mergeSortMatches(struct matches** headRef);
+struct matches *sortMatches(struct matches *match);
 
 #endif
