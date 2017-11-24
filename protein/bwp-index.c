@@ -19,7 +19,7 @@ void printSuffixArray(struct suffix **m,int seqCount, int *seqLength)
 	int i,j;
 	for(i= 0; i < seqCount;i++)
 	{
-		/*printf("\n%s\n",m[i][0].name);*/
+		printf("\nIndex Sequence: %d\n",i);
 		for(j=0; j < seqLength[i]; j++)
 		{
 			printf("%d\t%d\t%s\n",j,m[i][j].pos-1,m[i][j].string);
@@ -312,7 +312,7 @@ struct input manageInputs(int argc, char *argv[],int *seqCount) /*handles initia
 	        switch (c)
 	        {
 	            	case 'h':
-	                	printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-index <options>\"\n\nOptions:\n\n-f\t\tFor query of a fasta file\n-s\t\tFor query of a string\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tTo designate the output file name\n-v\t\tTo produce verbose output\n\n");
+	                	printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-index <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta fileas a query\n-s\t\tFor input of a string as a query\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tTo designate the output file name\n-v\t\tTo produce verbose output\n\n");
 	                	exit(0);
 	
 	            	case 'f':
