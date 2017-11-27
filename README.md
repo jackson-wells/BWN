@@ -10,6 +10,7 @@
  - BaseMap() using binary
  - Substitution matrix input
  - E-values of alignments
+ - Induced sorting of SA for calculation in "linear" time
 
 ### To Compile:
  1. Clone this repository to your local machine.
