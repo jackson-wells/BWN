@@ -131,6 +131,21 @@ void read_fasta(char *fileName, struct input *query)
         /*free(temp);*/
 }
 
+char *reverse(char *str)
+{
+	int i,len,end;
+	len = strlen(str);
+	end = len-1;
+	char temp;
+	char *tStr = (char *) malloc(sizeof(char) * len);
+	for( i=0 ; i< len ; i++)
+	{
+		tStr[i] = str[end];
+		end--;
+	}
+	return tStr;
+}
+
 char revBaseMap(int temp)
 {
         if(temp == 0){return 'A';}
@@ -554,6 +569,8 @@ struct results **inexactSearch(struct input query,int qsc,struct FMidx *index,in
 
 struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high,int score,int pState,char *traceBack,int tbIdx)
 {
+	char *tempTB = (char *) malloc(sizeof(char)*tbIdx);
+	strcpy(tempTB,traceBack);
 	int tempP = pState;
 	int tempS = score;
 	struct matches *match = (struct matches *) malloc(sizeof(struct matches));
@@ -572,19 +589,20 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 		match->low = low;
 		match->high = high;
 		match->score = score;
-		match->tb = (char *) malloc(sizeof(char) * strlen(traceBack));
-		strcpy(match->tb,traceBack);
+		match->tb = (char *) malloc(sizeof(char) * tbIdx);
+		strncpy(match->tb,tempTB,tbIdx);
+		strcpy(match->tb,reverse(match->tb));
 		match->traceLength = tbIdx;
 		return match;
 	}
-	traceBack[tbIdx] = 'X';
-	match = inexRecur(index,D,W,i-1,d-1,low,high,getScore(0,0,tempS,tempP,2),2,traceBack,tbIdx+1); //GAP in index seq
+	tempTB[tbIdx] = 'X';
+	match = inexRecur(index,D,W,i-1,d-1,low,high,getScore(0,0,tempS,tempP,2),2,tempTB,tbIdx+1); //GAP in index seq
 	if(match != NULL){ results = getUnion(match,results);}
 	match = NULL;
 	tempP = pState;
 	tempS = score;
 	int j;
-	for(j = 0;j < 20; j++)
+	for(j = 0; j < 20; j++)
 	{
 		int k = index.C[j] + index.O[j][low-1] + 1;
 		int l = index.C[j] + index.O[j][high];
@@ -594,16 +612,16 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 		}
 		if(k <= l)
 		{
-			traceBack[tbIdx] = 'Y';
-		        match = inexRecur(index,D,W,i,d-1,k,l,getScore(j,baseMap(W[i]),tempS,tempP,3),3,traceBack,tbIdx+1); //GAP in query
+			tempTB[tbIdx] = 'Y';
+		        match = inexRecur(index,D,W,i,d-1,k,l,getScore(j,baseMap(W[i]),tempS,tempP,3),3,tempTB,tbIdx+1); //GAP in query
 			if(match != NULL){results = getUnion(match,results);}
 			match = NULL;
 			tempP = pState;
 			tempS = score;
 			if(revBaseMap(j) == W[i]) //match
 			{
-				traceBack[tbIdx] = 'M';
-				match = inexRecur(index,D,W,i-1,d,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,traceBack,tbIdx+1);
+				tempTB[tbIdx] = 'M';
+				match = inexRecur(index,D,W,i-1,d,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,tempTB,tbIdx+1);
 				if(match != NULL){ results = getUnion(match,results);}
 				match = NULL;
 				tempP = pState;
@@ -611,8 +629,8 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 			}
 			else //mismatch
 			{
-				traceBack[tbIdx] = 'U';
-				match = inexRecur(index,D,W,i-1,d-1,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,traceBack,tbIdx+1);
+				tempTB[tbIdx] = 'U';
+				match = inexRecur(index,D,W,i-1,d-1,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,tempTB,tbIdx+1);
 				if(match != NULL){ results = getUnion(match,results);}
 				match = NULL;
 				tempP = pState;
@@ -634,33 +652,13 @@ struct matches *getUnion(struct matches *head1, struct matches *head2)
     	}
 	while (t2 != NULL)
     	{
-//      		if(!isPresent(result, t2->low,t2->high))
+//      	if(!isPresent(result, t2->low,t2->high))
 //		{
-            		push(&result, t2->low,t2->high,t2->score,t2->tb,t2->traceLength);
-//		}
-//		else //present but checking if score is better
-//		{
-//			getHighScore(result,t2->low,t2->high,t2->score,t2->tb,t2->traceLength);
+            	push(&result, t2->low,t2->high,t2->score,t2->tb,t2->traceLength);
 //		}
         	t2 = t2->next;
     	}
     	return result;
-}
-
-void getHighScore(struct matches *head, int k, int l, int score,char *traceback,int traceLength)
-{
-	struct matches *t = head;
-    	while (t != NULL)
-    	{
-        	if((t->low == k)&&(t->high == l)&&(t->score < score))
-        	{
-                	t->score = score;
-			strcpy(t->tb,traceback);
-			t->traceLength = traceLength;
-			return;
-        	}
-        	t = t->next;
-    	}	
 }
 
 void push(struct matches** head_ref, int k,int l,int score,char *traceback,int traceLength)
@@ -927,6 +925,7 @@ void printInResults(struct results **out,int qsc,int isc,struct FMidx *index, st
 				{
 //					printf("tb:%s\n",temp->tb);
 					printf("Score: %d\n\nIndex\t",temp->score);
+					miss = 0;
 					for(z = 0; z < temp->traceLength; z++)
 					{
 						if(z % 59 == 0 && z != 0)
@@ -961,20 +960,24 @@ void printInResults(struct results **out,int qsc,int isc,struct FMidx *index, st
                                                 }
                                                 else
                                                 {
-							if(query.sequence[i][z-missY] == index[j].sequence[index[j].SA[temp->low]+z-1-missX] && (temp->tb[z] != 'X' || temp->tb[z] != 'Y'))
-							{
-								printf("|");
-							}
-							else if(temp->tb[z] == 'X')
+							if(temp->tb[z] == 'X')
 							{
 								printf(" ");
 								missX++;
 							}
-							else if( temp->tb[z] == 'Y')
+							else if(temp->tb[z] == 'Y')
+                                                        {
+                                                                printf(" ");
+                                                                missY++;
+                                                        }
+							else if(temp->tb[z] == 'U')
 							{
 								printf(" ");
-                                                                missY++;
 							}
+                                                        else if(temp->tb[z] == 'M')
+							{
+                                                                printf("|");
+                                                        }
 							else
 							{
 								printf(" ");
@@ -1006,13 +1009,13 @@ void printInResults(struct results **out,int qsc,int isc,struct FMidx *index, st
 	                                                }
 						}
                                         }
-					printf("\n\nStart: %d\nEnd: %d\n\n-----------------------------------------------\n\n",index[j].SA[temp->low],index[j].SA[temp->low]+temp->traceLength-1);
+					printf("\n\nStart: %d\nEnd: %d\n\n-----------------------------------------------\n\n\n\n",index[j].SA[temp->low],index[j].SA[temp->low]+temp->traceLength-1);
 					temp = temp->next;
 				}
 			}
 			else
 			{
-				printf("No Matches Found\n");
+				printf("No Matches Found\n\n-----------------------------------------------\n\n\n\n");
 			}
 		}
 	}	

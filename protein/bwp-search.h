@@ -79,5 +79,5 @@ void frontbacksplit(struct matches* source, struct matches** frontRef, struct ma
 struct matches* sortedmergeMatch(struct matches* a, struct matches* b);
 void mergeSortMatches(struct matches** headRef);
 struct matches *sortMatches(struct matches *match);
-
+char *reverse(char *str);
 #endif
