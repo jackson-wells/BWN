@@ -7,13 +7,33 @@
 #include <unistd.h>
 #include <math.h>
 #include <stdbool.h>
+#include <getopt.h>
 
 bool verbose = false;
 int MAX_LINE_LENGTH = 10000000;
 char OUTPUT_FILE[] = "index.bwp";
 
-/* PRINT FUNCTIONS */
+/* 				*
+ * 	PRINTING FUNCTIONS 	*
+ * 				*/
 
+
+/*
+ 
+	printSuffixArray
+
+	outputs the suffix array(s) calculated from the input file
+
+	m: 2 dimensional structure array containing the sorted suffix array(s)
+
+	seqCount: integer variable containing the number of seqeunces presint
+                in the input file
+
+        seqLength: an array of integers containing the lengths of each sequence
+                in the input file
+
+	
+*/
 void printSuffixArray(struct suffix **m,int seqCount, int *seqLength)
 {
 	int i,j;
@@ -28,73 +48,77 @@ void printSuffixArray(struct suffix **m,int seqCount, int *seqLength)
 	printf("\n");
 }
 
-void printBwt(struct suffix **m,char **transform,int seqCount)
+/*
+ 
+	printBwt
+
+	outputs the transform(s) calculated from the input file
+
+	transform:  2 dimensional character array containing the
+                burrows-wheeler transform of each sequence from the input file
+
+	seqCount: integer variable containing the number of seqeunces presint
+                in the input file
+
+*/
+void printBwt(char **transform,int seqCount)
 {
 	int i;
 	for(i = 0;i < seqCount; i++)
     	{
-            	/*printf("sequence:\tbwt:\n%s\t\t%s\n\n",m[i][0].name,transform[i]);*/
         	printf("bwt:\n%s\n",transform[i]);
     	}
 	printf("\n");
 }
 
-void printInt(struct FMidx *index,int seqCount,int *seqLength)
+
+/* 					*
+ * 	MEMORY ALLOCATION FUNCTIONS 	*
+ * 					*/
+
+
+/*
+ 
+	initializeSuffixArray
+
+	allocates memory for the variables contained in the suffix
+	structure object
+
+	m:  structure array to contain the suffix array
+
+	seqLength: an array of integers containing the lengths of each sequence
+                in the input file
+
+
+*/
+void initializeSuffixArray(struct suffix *m,int seqLength)
 {
-        int i,j,z;
-        for(i = 0; i<seqCount;i++)
+	int j;
+	for(j = 0; j < seqLength; j++)
         {
-		printf("C(\"$\") of seq %d\t%d\n",i+1,index[i].C[0]);
-            	printf("C(\"A\") of seq %d\t%d\n",i+1,index[i].C[1]);
-            	printf("C(\"C\") of seq %d\t%d\n",i+1,index[i].C[2]);
-            	printf("C(\"G\") of seq %d\t%d\n",i+1,index[i].C[3]);
-            	printf("C(\"T\") of seq %d\t%d\n\n",i+1,index[i].C[4]);
-		printf("O():\n");
-		for(j= 0; j < 20; j++)
-		{
-			for(z= 0; z < seqLength[i]; z++)
-			{
-            			printf("%d ",index[i].O[j][z]);
-/*            			printf("0(\"C\") of seq %d\t%d\n",i+1,index[i].O[1]);
-			        printf("0(\"G\") of seq %d\t%d\n",i+1,index[i].O[2]);
-			        printf("0(\"T\") of seq %d\t%d\n\n",i+1,index[i].O[3]);*/
-			}
-			printf("\n");
-		}
+                m[j].string = (char *) malloc(seqLength * sizeof(char));
+    	        m[j].pos = j+1;
+                assert(m[j].string != 0);
         }
 }
 
+/*
+ 
+	initializeInputStruct
 
+	allocates memory for the variables contained in the input
+	structure object
 
-/* MEMORY ALLOCATION FUNCTIONS */
+	seqCount: integer variable containing the number of seqeunces presint
+                in the input file
 
-struct suffix **newSuffixArray(int seqCount, int *seqLength)
-{
-	struct suffix **m = (struct suffix **) malloc(seqCount * sizeof(struct suffix *));
-	int i;
-	for(i = 0; i < seqCount; i++) /*initiallizing x arrays of structs*/
-	{
-		m[i] = (struct suffix *) malloc(seqLength[i] * sizeof(struct suffix));
-        	assert(m != 0);
-	}
-        initializeSuffixArray(m,seqLength,seqCount); /*initializes each element of x arrays*/
-	return m;
-}
+        seqLength: an array of integers containing the lengths of each sequence
+                in the input file
 
-void initializeSuffixArray(struct suffix **m,int *seqLength,int seqCount)
-{
-	int i,j;
-	for(i = 0; i < seqCount;i++)
-	{
-		for(j = 0; j < seqLength[i]; j++)
-        	{
-        	        m[i][j].string = (char *) malloc(seqLength[i] * sizeof(char));
-    	                m[i][j].pos = j+1;
-        	        assert(m[i][j].string != 0);
-        	}
-	}
-}
+	returns: a structure variable prepared to contain information from the
+		input file
 
+*/
 struct input initializeInputStruct( int seqCount, int *seqLength)
 {
 	struct input query;
@@ -115,29 +139,77 @@ struct input initializeInputStruct( int seqCount, int *seqLength)
 
 
 
-/* MEMORY CLEARING FUNCTIONS */
+/* 					*
+ * 	MEMORY CLEARING FUNCTIONS 	*
+ * 					*/
 
+
+/*
+ 
+	deleteInputStruct
+
+	manages the removal of the input structure variable from memory
+
+	query: structure variable containing file information
+
+        seqCount: integer variable containing the number of seqeunces presint
+                in the input file
+
+*/
 void deleteInputStruct(struct input query,int seqCount)
 {
     	int i;
     	for(i = 0; i < seqCount; i++)
     	{
-//    	    free(query.name[i]);
-//    	    free(query.sequence[i]);
+/*    	    free(query.name[i]);
+    	    free(query.sequence[i]);*/
     	    query.length[i] = 0;
     	}
 }
 
+
+/*
+ 
+	deleteSuffixArray
+
+	manages the removal of the suffix structure variable from memory
+
+	m: 2 dimensional structure array containing the sorted suffix array(s)
+
+        seqCount: integer variable containing the number of seqeunces presint
+                in the input file
+
+        seqLength: an array of integers containing the lengths of each sequence
+                in the input file
+
+
+*/
 void deleteSuffixArray(struct suffix **m,int seqCount,int *seqLength)
 {
-	freeSuffixArray(m,seqCount,seqLength);
 	int i;
+	freeSuffixArray(m,seqCount,seqLength);
 	for(i = 0; i< seqCount; i++)
 	{
-		free(m[i]);
+	/*	free(m[i]);*/
 	}
 }
 
+/*
+ 
+	freeSuffixArray
+
+	manages the removal of the varaibles contained in the suffix
+	structure object from memory
+
+	m: 2 dimensional structure array containing the sorted suffix array(s)
+
+        seqCount: integer variable containing the number of seqeunces presint
+                in the input file
+
+        seqLength: an array of integers containing the lengths of each sequence
+                in the input file
+
+*/
 void freeSuffixArray(struct suffix **m,int seqCount,int *seqLength)
 {
 	int i,j;
@@ -147,7 +219,7 @@ void freeSuffixArray(struct suffix **m,int seqCount,int *seqLength)
 		{
 			if(m[i][j].string != 0)
 			{
-				free(m[i][j].string); 	/* free the space on the heap */
+			/*	free(m[i][j].string); */	/* free the space on the heap */
 				m[i][j].string = 0;   	/* make it point to null */
 			}
 			m[i][j].pos = 0;
@@ -157,15 +229,24 @@ void freeSuffixArray(struct suffix **m,int seqCount,int *seqLength)
 
 
 
-/* HELPER FUNCTIONS */
+/* 				*
+ * 	HELPER FUNCTIONS 	*
+ * 				*/
 
-/* fileExists
+/*
+  
+ 	fileExists
 	
-	Purpose: check that supplied filehandles are accesible and existing files 
-	Returns: true or false in integer form
+	verifies the input file exists and is accessible
+
+	temp: string variable containing the name of the input file
+
+	returns: 
+		0 if the file exists and is accessible
+		
+		1 if the file does not exist or is unaccessible
 
 */
-
 int fileExists(char *temp)
 {
 
@@ -181,10 +262,17 @@ int fileExists(char *temp)
         }
 }
 
-/*  seqCount
+/*  
+ 
+	seqCount
 
-    Purpose: Find the number of sequences in the query file
-	Returns: integer
+    	finds the number of sequences in the input file
+	
+	fileName: string variable containing the name of the input file
+
+	returns: integer corresponding to the number of sequences contained
+		in the input file
+
 */
 int getSeqCount(char *fileName)	/*reutrns number of sequences present in a multi-fasta file*/
 {
@@ -193,25 +281,37 @@ int getSeqCount(char *fileName)	/*reutrns number of sequences present in a multi
 	char *temp = (char *) malloc((MAX_LINE_LENGTH+1) * sizeof(char));
 	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)
 	{
-		lineCount++;
+		if(strstr(temp,">"))
+		{
+			lineCount++;
+		}
 	}
-	//fclose(file);
+	fclose(file);
 	/*free(temp);*/
-	return lineCount/2;
+	return lineCount;
 }
 
-/*  seqLength
+/*  
 
-    Purpose: get the lengths of query sequences from file
-	Returns: array of integers
+	seqLength
+
+    	gets the lengths of query sequences from the input file
+
+	fileName: string variable containing the name of the input file	
+	
+	seqCount: integer variable containing the number of sequences 
+		contained in the input file
+
+	returns: an array of integers
+
 */
-int *getLength(char *fileName,int seqCount,int charCount) /*returns an array of sequence lengths*/
+int *getLength(char *fileName,int seqCount) /*returns an array of sequence lengths*/
 {
+	int i = 0;
         FILE *file = fopen(fileName,"r");
-        char *seq = (char *) malloc(charCount * sizeof(char));
+        char *seq = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
         int *seqLength = (int *) malloc(seqCount * sizeof(int));;
-        int i = 0;
-        while(fgets(seq,charCount-1,file) != NULL)
+        while(fgets(seq,MAX_LINE_LENGTH-1,file) != NULL)
         {
             	if(seq[0] != '>' && seq[0] != '\n')
             	{
@@ -224,19 +324,26 @@ int *getLength(char *fileName,int seqCount,int charCount) /*returns an array of 
         return seqLength;
 }
 
-/*  read_fasta
+/*  
 
-    Purpose: Store FASTA file information into memory
-	Returns: Nothing, Variables passed by reference
+ 	read_fasta
+
+   	stores fasta file information into memory, adds "$" character
+	to sequence and reverse sequence
+	
+	fileName: string variable containing the name of the file input
+		to be indexed
+
+	query: structure variable to contain file information
+
 */
 void read_fasta(char *fileName, struct input *query)
 {
-    	int charCount = MAX_LINE_LENGTH;
-    	char *temp = (char *) malloc(charCount * sizeof(char));
-	char *rev = (char *) malloc(charCount * sizeof(char));
+    	char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
+	char *rev = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
     	FILE *file = fopen(fileName,"r");
     	int i = 0;
-    	while(fgets(temp,charCount,file) != NULL)   /*loops through each line of a file*/
+    	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
     	{
             	if(temp[0] == '>')      /*if line is a header*/
             	{
@@ -251,28 +358,35 @@ void read_fasta(char *fileName, struct input *query)
             	else    /*if line contains a nucleotide sequence*/
             	{
                     	strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
-			rev = reverse(temp,strlen(temp));
+			rev = reverse(temp);
 			strcat(rev,"$");
                     	strcat(temp,"$");
                     	strcpy(query->sequence[i],temp);    /*saving string in memory*/
 			strcpy(query->reverse[i],rev);
                     	query->length[i] = strlen(temp);
                     	i++;
+			memset(temp,0,strlen(temp));
+			memset(rev,0,strlen(rev));
             	}
     	}
 	fflush(file);
     	fclose(file);
-	//free(temp);
-	//free(rev);
+/*	free(temp);
+	free(rev);*/
 }
 
-/*  charToEnd
+/*  
 
-    Purpose: Move first element of string to the last element.
-	Returns: "Rotated" string
+	charToEnd
+
+	shifts a string left, maintaing the first element 
+	and moving it to the back of the string
+
+	input: string to be shifted 
+	
 */
-void charToEnd(char* input)	/*Takes in char* and puts the first character element*/
-{				/*at the back of the array */
+void charToEnd(char* input)
+{			
 	const int len = strlen(input);
     	if(len > 1)
     	{
@@ -282,12 +396,24 @@ void charToEnd(char* input)	/*Takes in char* and puts the first character elemen
     	}
 }
 
-char* reverse(char *str,int length)
+/*	
+
+	reverse
+ 	
+	reverses the order of characters in a string
+
+	str: string to be reversed
+
+	returns: a temporary variable containing a reversed verison
+		of the input string
+
+*/
+char* reverse(char *str)
 {
-	char *temp = (char *) malloc(length*sizeof(char));
+	char *temp = (char *) malloc(strlen(str)*sizeof(char));
 	int i;
 	int idx = 0;
-	for(i = length-1; i > -1; i=i-1)
+	for(i = strlen(str)-1; i > -1; i=i-1)
 	{
 		temp[idx] = str[i];
 		idx++;
@@ -295,9 +421,103 @@ char* reverse(char *str,int length)
 	return temp;
 }
 
-/* INPUT HANDLING FUNCTIONS */
+/*
+ 	
+	extensionExists
 
-struct input manageInputs(int argc, char *argv[],int *seqCount) /*handles initial query into the program*/
+	iterates over the input file name to verify if a file
+	extension exists
+
+	temp: string variable containing the name of the input file
+
+	returns:
+		0 if the input file's name contains a file extension
+		
+		1 if the input file's name does not conatain a file extension 
+
+*/
+int extensionExists(char *temp)
+{
+        int i = 0;
+        for(i = 0; i < (int)(strlen(temp)-1); i++)
+        {
+                if(temp[i] == '.')
+                {
+                        return 0;
+                }
+        }
+        return 1;
+}
+
+
+/*
+ 
+  	baseMap
+	
+	handles input of characters from the amino acid alphabet
+	
+	temp: character variable containing a capitol letter from 
+		the amino acid alphabet
+
+	returns:
+		if in alphabet: corresponding integer for the input character
+		
+		if not in alphabet: error message containing the invalid
+		character and exits with status 1
+
+*/
+int baseMap(char temp)
+{
+        if(temp == 'A'){return 0;}
+        else if(temp == 'C'){return 1;}
+        else if(temp == 'D'){return 2;}
+        else if(temp == 'E'){return 3;}
+        else if(temp == 'F'){return 4;}
+        else if(temp == 'G'){return 5;}
+        else if(temp == 'H'){return 6;}
+        else if(temp == 'I'){return 7;}
+        else if(temp == 'K'){return 8;}
+        else if(temp == 'L'){return 9;}
+        else if(temp == 'M'){return 10;}
+        else if(temp == 'N'){return 11;}
+        else if(temp == 'P'){return 12;}
+        else if(temp == 'Q'){return 13;}
+        else if(temp == 'R'){return 14;}
+        else if(temp == 'S'){return 15;}
+        else if(temp == 'T'){return 16;}
+        else if(temp == 'V'){return 17;}
+        else if(temp == 'W'){return 18;}
+        else if(temp == 'Y'){return 19;}
+        else
+        {
+                printf("Invalid character '%c'\n",temp);
+                exit(1);
+        }
+}
+
+/* 					*
+ * 	INPUT HANDLING FUNCTIONS 	*
+ * 					*/
+
+
+/*
+ 
+	manageInputs
+
+	handles command-line input from user
+
+	argc: integer variable containing the number of arguements passed in
+
+	argv: 2d character array containing the arguement strings
+
+	seqCount: integer array to hold the number of sequences to be processed
+		in the run of the program
+
+	returns: a structure variable containing input information
+
+
+*/
+struct input manageInputs(int argc, char *argv[],int *seqCount) 
 {
 	struct input query;
   	int c;
@@ -365,177 +585,272 @@ struct input manageInputs(int argc, char *argv[],int *seqCount) /*handles initia
     	return query;
 }
 
+
+/*
+ 
+	handleS
+
+	handles sequence information supplied via command-line
+
+	query: structure variable containing input information
+
+	sequence: protein sequence input by the user
+
+
+*/
 void handleS(struct input *query, char *sequence)
 {
+	int seqCount = 1;
+	int *seqLength = (int *) malloc(sizeof(int));
+	char *rev = reverse(sequence);
     	printf("\nHere is the string you entered:\n%s\n\n",sequence);
-    	int *seqLength = (int *) malloc(sizeof(int));
     	seqLength[0] = strlen(sequence) + 1;
-    	int seqCount = 1;
-	char *rev = reverse(sequence,strlen(sequence));
 	strcat(rev,"$");
     	strcat(sequence,"$");
     	*query = initializeInputStruct(seqCount,seqLength);
     	query->length[0] = seqLength[0];
 	strcpy(query->reverse[0],rev);
     	strcpy(query->sequence[0],sequence);
-    	strcpy(query->name[0],"Command Line String Input");
+    	strcpy(query->name[0],"Command-line Input");
 }
 
+
+/*
+ 
+	handleF
+
+	handles sequence information supplied via files
+
+	query: structure variable containing file information
+
+	fileName: character string containing the name of the input file
+
+
+
+*/
 void handleF(struct input *query,char *fileName)
 {
     	int seqCount = getSeqCount(fileName);
-    	int charCount = MAX_LINE_LENGTH;
-    	int *seqLength = getLength(fileName,seqCount,charCount);
+    	int *seqLength = getLength(fileName,seqCount);
     	*query = initializeInputStruct(seqCount,seqLength);
     	read_fasta(fileName, query);
 }
 
 
 
-/* SUFFIX ARRAY FUNCTIONS */
+/* 					*
+ *  	SUFFIX ARRAY FUNCTIONS 		*
+ *  					*/
 
-struct suffix **buildSuffixArray(struct input query,int seqCount)
+
+/*
+ 
+	newSuffixArray
+
+	allocates memory for a structure array and the variables contained
+	in said structure array
+
+	seqLength: an integer variable containing the lenght of the current
+		input sequence
+
+	returns: an initialized and empty structure array
+
+*/
+struct suffix *newSuffixArray(int seqLength)
 {
-    	/*intialize array*/
-    	struct suffix **m = newSuffixArray(seqCount,query.length);
-    	/*place sequences in respective areas of memory*/
-    	populateSuffixArray(m,query,seqCount);
-    	/*sort*/
-    	int i;
-    	for(i = 0; i < seqCount; i++)
-    	{
-    		mergeSort(0,query.length[i]-1,m,i);
-    	}
-    	return m;
+        struct suffix *m = (struct suffix *) malloc(seqLength * sizeof(struct suffix));
+        assert(m != 0);
+        initializeSuffixArray(m,seqLength);
+        return m;
 }
 
-struct suffix **buildReverseSuffixArray(struct input query,int seqCount)
+/*
+ 
+	buildSuffixArray
+
+	manages memory declaration and sorting of a SA
+	
+	sequence: a character array containing an input sequence
+
+	returns: a structure array containing a sorted suffix array
+
+
+*/
+struct suffix *buildSuffixArray(char *sequence)
 {
-        /*intialize array*/
-        struct suffix **Rm = newSuffixArray(seqCount,query.length);
-        /*place sequences in respective areas of memory*/
-        populateReverseSuffixArray(Rm,query,seqCount);
-        /*sort*/
-        int i;
-        for(i = 0; i < seqCount; i++)
+    	struct suffix *SA = populateSuffixArray(sequence);
+	int length = strlen(sequence);
+    	mergeSort(0,length-1,SA);
+    	return SA;
+}
+
+
+/*
+ 
+	populateSuffixArray
+
+	puts a sequence into a structre array, rotated each time
+
+	sequence: a character array containing an input sequence
+
+        returns: a structure array containing an unsorted suffix array
+
+
+*/
+struct suffix *populateSuffixArray(char *sequence)
+{
+	int length = strlen(sequence);
+	struct suffix *SA = newSuffixArray(length);
+	int j;
+        char *tempSeq = sequence;
+	length = strlen(sequence);
+        for(j = 0; j < length; j++)
         {
-                mergeSort(0,query.length[i]-1,Rm,i);
+                SA[j].pos = j + 1;
+               	if(j == 0)
+               	{
+               		strcpy(SA[j].string,tempSeq);
+               	}
+               	if(j > 0)
+               	{
+               	    	charToEnd(tempSeq);
+               	    	strcpy(SA[j].string,tempSeq);
+               	}
         }
-        return Rm;
+	return SA;
 }
 
-void populateReverseSuffixArray(struct suffix **m, struct input query, int seqCount)
-{
-        int i,j;
-        for(i = 0; i < seqCount; i++)
-        {
-                char *tempSeq = query.reverse[i];
-                for(j = 0; j < query.length[i]; j++)
-                {
-                        m[i][j].pos = j + 1;
-                        if(j == 0)
-                        {
-                                strcpy(m[i][j].string,tempSeq);
-                        }
-                        if(j > 0)
-                        {
-                                charToEnd(tempSeq);
-                                strcpy(m[i][j].string,tempSeq);
-                        }
-                }
-        }
-}
+/* 				*
+ * 	SORTING FUNCTIONS 	*
+ * 				*/
 
-void populateSuffixArray(struct suffix **m, struct input query, int seqCount)
-{
-	int i,j;
-    	for(i = 0; i < seqCount; i++)
-    	{
-        	char *tempSeq = query.sequence[i];
-        	for(j = 0; j < query.length[i]; j++)
-        	{
-                	m[i][j].pos = j + 1;
-                	if(j == 0)
-                	{
-                		strcpy(m[i][j].string,tempSeq);
-                	}
-                	if(j > 0)
-                	{
-                	    	charToEnd(tempSeq);
-                	    	strcpy(m[i][j].string,tempSeq);
-                	}
-        	}
-    	}
-}
 
-void mergeSort(int low, int high,struct suffix **m,int seqNumber)
+/*
+ 
+	mergeSort
+	
+	manages the recursive sorting of a suffix array
+
+	low: an integer value initially holding the value of 0
+	
+	high: an integer value initially holding the 1 minus the length
+		of the current sequence
+
+	m: structure array containing the unsorted suffix array
+
+
+*/
+void mergeSort(int low, int high,struct suffix *m)
 {
 	if(low<high)
  	{
         	int mid = low+(high - low)/2;
-        	mergeSort(low,mid,m,seqNumber);
-        	mergeSort(mid+1,high,m,seqNumber);
-        	Merge(low,mid,high,m,seqNumber);
+        	mergeSort(low,mid,m);
+        	mergeSort(mid+1,high,m);
+        	Merge(low,mid,high,m);
     	}
 }
 
-void Merge(int low,int mid, int high, struct suffix **m, int seqNumber)
+
+/*
+
+	Merge
+
+	merges two structure arrays containing sequence and position
+	information
+
+	low: an integer value initially holding the value of 0
+
+	mid: an integer value holding the middle location between the low
+		and high variables
+
+	high: an integer value initially holding the 1 minus the length
+                of the current sequence
+
+	m: structure array containing the unsorted suffix array
+
+
+ */
+void Merge(int low,int mid, int high, struct suffix *m)
 {
+	int j = 0;
+	int k = low;
     	int nL= mid-low+1;
     	int nR= high-mid;
-	int seqLength = strlen(m[seqNumber][0].string);
+	int seqLength = strlen(m[0].string);
 	int i = 0;
-	struct suffix tempL[nL];
-	struct suffix tempR[nR];
+	struct suffix *tempL;
+	struct suffix *tempR;
+	tempL = (struct suffix *) malloc(sizeof(struct suffix)*nL);
+	tempR = (struct suffix *) malloc(sizeof(struct suffix)*nR);
 	for(i = 0; i < nL; i++)
 	{
-		tempL[i].string = malloc(seqLength-1 * sizeof(char)); //Memory allocation for string in struct
-		strcpy(tempL[i].string,m[seqNumber][low+i].string); 
-		tempL[i].pos = m[seqNumber][low+i].pos;
+		tempL[i].string = malloc(seqLength * sizeof(char)); /*Memory allocation for string in struct*/
+		strcpy(tempL[i].string,m[low+i].string); 
+		tempL[i].pos = m[low+i].pos;
 	}
 	for(i = 0; i < nR; i++)
         {
-		tempR[i].string = malloc(seqLength-1 * sizeof(char));
-                strcpy(tempR[i].string,m[seqNumber][mid+i+1].string);
-                tempR[i].pos = m[seqNumber][mid+i+1].pos;
+		tempR[i].string = malloc(seqLength * sizeof(char));
+                strcpy(tempR[i].string,m[mid+i+1].string);
+                tempR[i].pos = m[mid+i+1].pos;
         }
-	int j = 0;
 	i = 0;
-	int k = low;
 	while (i < nL && j < nR)
     	{
         	if (strcmp(tempL[i].string,tempR[j].string) <= 0)
         	{
-        	    	strcpy(m[seqNumber][k].string,tempL[i].string);
-			m[seqNumber][k].pos = tempL[i].pos;
+        	    	strcpy(m[k].string,tempL[i].string);
+			m[k].pos = tempL[i].pos;
         	    	i++;
         	}
         	else
         	{
-			strcpy(m[seqNumber][k].string,tempR[j].string);
-                        m[seqNumber][k].pos = tempR[j].pos;
+			strcpy(m[k].string,tempR[j].string);
+                        m[k].pos = tempR[j].pos;
         	    	j++;
         	}
         	k++;
     	}
 	while(i < nL)
     	{
-		strcpy(m[seqNumber][k].string,tempL[i].string);
-                m[seqNumber][k].pos = tempL[i].pos;
+		strcpy(m[k].string,tempL[i].string);
+                m[k].pos = tempL[i].pos;
         	i++;
         	k++;
     	}
 	while (j < nR)
     	{
-		strcpy(m[seqNumber][k].string,tempR[j].string);
-                m[seqNumber][k].pos = tempR[j].pos;
+		strcpy(m[k].string,tempR[j].string);
+                m[k].pos = tempR[j].pos;
         	j++;
         	k++;
     	}
 }
 
-/* TRANSFORM CALCULATION FUNCTIONS */
+/* 						*
+ * 	TRANSFORM CALCULATION FUNCTIONS 	*
+ * 						*/
 
+
+/*
+ 
+ 	bwt
+
+	calculates a transform sequence from a suffix array
+
+	m: 2 dimensional structure array containing the sorted suffix array
+
+	seqCount: integer variable containing the number of seqeunces presint
+                in the input file
+
+	seqLength: an array of integers containing the lengths of each sequence
+		in the input file
+	
+	returns: a character array containing the calculated burrows-wheeler
+		transform
+  
+ */
 char **bwt(struct suffix **m, int seqCount,int *seqLength)
 {
 	int i,x;
@@ -554,110 +869,167 @@ char **bwt(struct suffix **m, int seqCount,int *seqLength)
 
 
 
-/* INTERVAL CALCULATION FUNCTIONS */
+/* 						*
+ * 	INTERVAL CALCULATION FUNCTIONS 		*
+ * 						*/
 
-struct FMidx *calculateInterval(char **transform, int *seqLength,int seqCount, char **revTransform)
+
+/*
+	calculateInterval
+
+	manages the calculation of the O and C values
+
+	transform: 2 dimensional character array containing the
+                burrows-wheeler transform of each sequence from the input file
+	
+	seqCount: integer variable containing the number of seqeunces presint
+                in the input file
+
+	revTransform: 2 dimensional character array containing the
+                reverse burrows-wheeler transform of each sequence from
+                the input file
+
+	returns: a structure array containing the calculated O and C values for
+		each sequence in the input file
+
+*/
+struct FMidx *calculateInterval(char **transform, int seqCount, char **revTransform)
 {
     	struct FMidx *index = (struct FMidx *) malloc(seqCount * sizeof(struct FMidx));
-    	int i,j,z;
+    	int i,j,length;
     	for(i = 0; i < seqCount; i++)
     	{
 		index[i].O = (int **) malloc(20*sizeof(int **));
 		index[i].R = (int **) malloc(20*sizeof(int **));
-        	for(j = 0; j < 20; j++) //looping thru each char
+        	for(j = 0; j < 20; j++) /*looping thru each char*/
         	{
-			index[i].O[j] = (int *) malloc(seqLength[i]*sizeof(int));
-			index[i].R[j] = (int *) malloc(seqLength[i]*sizeof(int));
-			index[i].R[j] = calculateO(revTransform[i],seqLength[i],j);
-           		index[i].O[j] = calculateO(transform[i],seqLength[i],j);
-			if(j == 0)				//Base Cases covered to decrease runtime
+			length = strlen(transform[i]);
+			index[i].O[j] = (int *) malloc(length*sizeof(int));
+			index[i].R[j] = (int *) malloc(length*sizeof(int));
+			index[i].R[j] = calculateO(revTransform[i],j);
+           		index[i].O[j] = calculateO(transform[i],j);
+			if(j == 0)				
+/*Base Cases covered to decrease runtime*/
 			{
 				index[i].C[j] = 0;
 			}
 			else
 			{
-            			index[i].C[j] = calculateC(transform[i],seqLength[i],j);
+            			index[i].C[j] = calculateC(transform[i],j);
 			}
         	}
     	}
     	return index;
 } 
 
-int baseMap(char temp)
-{
-	if(temp == 'A') return 0;
-	else if(temp == 'C') return 1;
-	else if(temp == 'D') return 2; 
-	else if(temp == 'E') return 3;
-	else if(temp == 'F') return 4;
-        else if(temp == 'G') return 5;
-        else if(temp == 'H') return 6;
-        else if(temp == 'I') return 7;
-	else if(temp == 'K') return 8;
-        else if(temp == 'L') return 9;
-        else if(temp == 'M') return 10;
-        else if(temp == 'N') return 11;
-	else if(temp == 'P') return 12;
-        else if(temp == 'Q') return 13;
-        else if(temp == 'R') return 14;
-        else if(temp == 'S') return 15;
-        else if(temp == 'T') return 16;
-        else if(temp == 'V') return 17;
-        else if(temp == 'W') return 18;
-        else if(temp == 'Y') return 19;
-}
 
-int *calculateO(char *sequence,int seqLength,int letterValue)
+/*
+ 
+	calculateO
+	
+	computes O values for a single character and sequence
+
+	sequence: a string variable containing the transform of a sequence
+                from the input file
+
+	letterValue: an integer variable containing the number of the character
+                being counted
+
+	returns: an array of integers increasing from zero as the character
+		is found in the transform, excluding "$"
+
+			
+*/
+int *calculateO(char *sequence,int letterValue)
 {
 	int i;
         int count = 0;
-	int *temp = (int *) malloc(seqLength * sizeof(int)); 
-        for(i = 0; i < seqLength; i++)
+	int length = strlen(sequence);
+	int *value = (int *) malloc(length * sizeof(int)); 
+        for(i = 0; i < length; i++)
         {
-                if(baseMap(sequence[i]) == letterValue)
+		if(sequence[i] != '$')
                 {
-                        count++;
-                }
-		temp[i] = count;
+                	if(baseMap(sequence[i]) == letterValue)
+                	{
+                	        count++;
+                	}
+		}
+		value[i] = count;
         }
-        return temp;
+        return value;
 }
 
-int calculateC(char *sequence, int seqLength,int letterValue)
+/*
+ 
+	calculateC
+
+	computes C value for a single character
+	
+	sequence: a string variable containing the transform of a sequence
+		from the input file
+
+	letterValue: an integer variable containing the number of the character
+		being counted
+	
+	returns: the number of occurrences of the character in the transform,
+                excluding "$"
+
+ */
+int calculateC(char *sequence, int letterValue)
 {
     	int i;
 	int count = 0;
-        for(i = 0; i < seqLength; i++)
+	int temp = strlen(sequence);
+        for(i = 0; i < temp; i++)
         {
-        	if(baseMap(sequence[i]) < letterValue)
-           	{
-                	count++;
-            	}
+		if(sequence[i] != '$')
+        	{	
+			if(baseMap(sequence[i]) < letterValue)
+           		{	
+                		count++;
+            		}
+		}
         }
     	return count;
 }
 
-int extensionExists(char *temp)
-{
-	int i = 0;
-	for(i = 0; i < strlen(temp)-1; i++)
-	{
-		if(temp[i] == '.')
-		{
-			return 0;
-		}
-	}
-	return 1;
-}
+/* 				*
+ * 	OUTPUT FUNCTIONS 	*
+ * 				*/
 
-/* OUTPUT FUNCTIONS */
+/*
+ 
+	intervalToFile
+	
+	writes the calculated sequence information to the specified file name
 
+	index: structure array containing the O, R and C values calculated
+		from the input file
+	
+	query: structure variable containing file information
+	
+	m: 2 dimensional structure array containing the sorted suffix array 
+	
+	transform: 2 dimensional character array containing the 
+		burrows-wheeler transform of each sequence from the input file
+	
+	revTransform: 2 dimensional character array containing the
+        	reverse burrows-wheeler transform of each sequence from
+		the input file
+
+	seqCount: integer variable containing the number of seqeunces presint
+        	in the input file
+
+
+*/
 void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **transform, struct input query,char **revTransform)
 {
 	FILE *f;
+	int i,j,z,q;
 	if(strlen(OUTPUT_FILE) == 0) 
 	{
-		f = fopen("index.bwp","w");	//change when moved to new infrastructure
+		f = fopen("index.bwp","w");	/*change when moved to new infrastructure*/
 	}
 	else
 	{
@@ -673,11 +1045,10 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
             	printf("Error opening file!\n");
         	exit(1);
 	}
-	int i,j,z,q;
 	fprintf(f,"n:%d\n\n",seqCount);
 	for(i = 0; i<seqCount;i++)
         {
-//		query.sequence[i] = query.sequence[i]+2;
+/*		query.sequence[i] = query.sequence[i]+2;*/
 		fprintf(f,"d:%s\nl:%d\nq:%s\ns:",query.name[i],query.length[i],query.sequence[i]+1);
 		for(q = 0; q < query.length[i]; q++)
 		{
@@ -709,25 +1080,39 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
 
 
 
-/* MAIN FUNCTION */
+/* 			*
+ *  	MAIN FUNCTION 	*
+ *  			*/
+
 
 int main(int argc, char *argv[])
 {
 	int seqCount = 0;	/*will contain # of sequences, is written by manageInputs()*/
+	char **revTransform;
+	char **transform;
+	struct FMidx *index;
 	struct input query = manageInputs(argc,argv,&seqCount);
-	struct suffix **m = buildSuffixArray(query,seqCount);
-	struct suffix **Rm = buildReverseSuffixArray(query,seqCount);
+	struct suffix **m = (struct suffix **) malloc(seqCount*sizeof(struct suffix *));
+	struct suffix **Rm = (struct suffix **) malloc(seqCount*sizeof(struct suffix *));
+	int i;
+	for(i = 0; i < seqCount; i++)
+	{
+		m[i] = buildSuffixArray(query.sequence[i]);
+		Rm[i] = buildSuffixArray(query.reverse[i]);
+	}
 	if(verbose)
 	{
 		printSuffixArray(m,seqCount,query.length);
 	}
-	char **transform = bwt(m,seqCount,query.length);	/*contains transforms of all query fastas*/
-	char **revTransform = bwt(Rm,seqCount,query.length);
-	//printBwt(m,transform,seqCount);
-	struct FMidx *index = calculateInterval(transform,query.length,seqCount,revTransform);
-	//printInt(index,seqCount,query.length);
+	transform = bwt(m,seqCount,query.length);	/*contains transforms of all query fastas*/
+	revTransform = bwt(Rm,seqCount,query.length);
+	if(verbose)
+	{
+		printBwt(transform,seqCount);
+	}
+	index = calculateInterval(transform,seqCount,revTransform);
 	intervalToFile(index,seqCount,m,transform,query,revTransform);
-    	deleteSuffixArray(m,seqCount,query.length);
-    	deleteInputStruct(query,seqCount);
+/*    	deleteSuffixArray(m,seqCount,query.length);
+    	deleteInputStruct(query,seqCount);*/
     	return 0;
 }
