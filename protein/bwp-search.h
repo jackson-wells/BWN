@@ -29,6 +29,7 @@ struct matches
 	struct matches *next;
 	int score;
 	char *tb;
+	int *tbi;
 	int traceLength;
 };
 
@@ -63,12 +64,13 @@ struct input manageInputs(char *argv[], int argc,int *seqCount);
 void handleF(struct input *query,char *fileName);
 void handleS(struct input *query,char *sequence);
 struct input initializeInputStruct( int seqCount, int *seqLength);
-int *getSeqLength(char *fileName,int seqCount,int charCount);
+int *getSeqLength(char *fileName,int seqCount);
+int getCount(void);
 int getSeqCount(char *fileName);
 char *removePrefix(char *query);
 int ***calculateD(struct FMidx *index,int isc,struct input query,int qsc);
 struct results **inexactSearch(struct input query,int QseqCount,struct FMidx *index,int IseqCount,int ***D);
-struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high,int score,int pState,char *traceBack,int tbIdx);
+struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high,int score,int pState,char *traceBack,int tbIdx,int *tempiTB);
 char revBaseMap(int temp);
 void printInResults(struct results **out,int qsc,int isc,struct FMidx *index, struct input query);
 struct matches *pointToTail(struct matches *match);
@@ -80,4 +82,5 @@ struct matches* sortedmergeMatch(struct matches* a, struct matches* b);
 void mergeSortMatches(struct matches** headRef);
 struct matches *sortMatches(struct matches *match);
 char *reverse(char *str);
+char *getSequenceAlignment(int i,int j,struct FMidx *index, struct input query,struct matches *match);
 #endif
