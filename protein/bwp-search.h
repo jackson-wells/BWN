@@ -55,11 +55,10 @@ void push(struct matches** head_ref, int k,int l,int score,char *traceBack,int t
 int isPresent(struct matches *head, int k, int l);
 int *getLength(int seqCount);
 int baseMap(char temp);
-void printResults(struct output **out, int qsc, int isc,struct FMidx *index);
 void outputToFile(struct results **out, int qsc, int isc,struct FMidx *index,struct input query);
 struct output **search(struct input query,int qsc,struct FMidx *index,int isc);
 void read_fasta(char *fileName, struct input *query);
-struct FMidx *getIndex(int *seqCount);
+struct FMidx *getIndex(void);
 struct input manageInputs(char *argv[], int argc,int *seqCount);
 void handleF(struct input *query,char *fileName);
 void handleS(struct input *query,char *sequence);

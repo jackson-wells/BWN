@@ -87,7 +87,7 @@ int getSeqCount(char *fileName)
 		}
         }
         fclose(file);
-        /*free(temp);*/
+        free(temp);
         return lineCount;
 }
 
@@ -136,7 +136,7 @@ int *getSeqLength(char *fileName,int seqCount) /*returns an array of sequence le
             	}
         }
         fclose(file);
-        /*free(seq);*/
+        free(seq);
         return seqLength;
 }
 
@@ -168,6 +168,7 @@ int *getLength(int seqCount)
                 }
         }
         fclose(file);
+	free(temp);
         return length;
 }
 
@@ -183,12 +184,11 @@ int *getLength(int seqCount)
 */
 void read_fasta(char *fileName, struct input *query)
 {
-    	int charCount = MAX_LINE_LENGTH;
-    	char *temp = (char *) malloc(charCount * sizeof(char));
+    	char *temp = (char *) malloc(MAX_LINE_LENGTH+1 * sizeof(char));
     	/*m = newArr(seqC,seqLength);*/
     	FILE *file = fopen(fileName,"r");
     	int i = 0;
-    	while(fgets(temp,charCount,file) != NULL)   /*loops through each line of a file*/
+    	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
     	{
             	if(temp[0] == '>')      /*if line is a header*/
             	{
@@ -210,7 +210,7 @@ void read_fasta(char *fileName, struct input *query)
             	}
     	}
     	fclose(file);
-        /*free(temp);*/
+        free(temp);
 }
 
 
@@ -619,7 +619,7 @@ void handleF(struct input *query,char *fileName)
 	returns:
 
 */
-struct FMidx *getIndex(int *IseqCount)
+struct FMidx *getIndex(void)
 {
 	int j,z,i,rCount,oCount;
 	char *number;
@@ -628,7 +628,6 @@ struct FMidx *getIndex(int *IseqCount)
 	struct FMidx *tempIndex;
 	int seqCount = getCount();
 	int *seqLength = getLength(seqCount);
-	*IseqCount = seqCount;
 	temp = (char *) malloc((MAX_LINE_LENGTH+1)*sizeof(char));
 	tempIndex = (struct FMidx *) malloc(seqCount * sizeof(struct FMidx));
 	file = fopen(INTERVAL_FILE,"r");
@@ -1215,55 +1214,6 @@ char *getSequenceAlignment(int i,int j,struct FMidx *index, struct input query,s
  * 				*/
 
 /*
-
-	printResults
-
-	out:
-
-	qsc:
-
-	isc:
-
-	index:
-
-*/
-void printResults(struct output **out, int qsc, int isc,struct FMidx *index)
-{
-        int i,j;
-        for(i = 0; i < qsc; i++)
-        {
-                printf("Query Sequence: %d\n",i+1);
-                for(j = 0; j < isc; j++)
-                {
-                        printf("\tDatabase Sequence: %d\n",j+1);
-                        if(out[i][j].low == 0 && out[i][j].high == 0)
-                        {
-                                printf("\t\tNot Found\n\n");
-                        }
-                        else
-                        {
-                                if(out[i][j].high == out[i][j].low )
-                                {
-                                        printf("\t\tFound \"%s\" starting at the %dth position\n\n",out[i][j].sequence,index[j].SA[out[i][j].low]);
-                                }
-                                else
-                                {
-                                        int temp = (out[i][j].high - out[i][j].low)+1;
-                                        int z;
-                                        printf("\t\tFound \"%s\" starting at positions:\n",out[i][j].sequence);
-                                        for(z = 0; z < temp; z++)
-                                        {
-                                                printf("\t\t%d\n",index[j].SA[out[i][j].low+z]);
-                                        }
-                                        printf("\n");
-                                }
-                        }
-                }
-                printf("\n");
-        }
-}
-
-/*
  
 	printInResults
 
@@ -1446,7 +1396,7 @@ int main(int argc, char *argv[])
 	int ***D; 
         struct results **out;
 	struct input query = manageInputs(argv,argc,&QseqCount);
-        struct FMidx *index = getIndex(&IseqCount);
+        struct FMidx *index = getIndex();
 	IseqCount = getCount();
 	D = calculateD(index,IseqCount,query,QseqCount);
 	/*Search*/
@@ -1454,7 +1404,6 @@ int main(int argc, char *argv[])
 	out = inexactSearch(query,QseqCount,index,IseqCount,D);
 	/*Output*/
 	outputToFile(out,QseqCount,IseqCount,index,query);
-/*	printResults(out,QseqCount,IseqCount,index);*/
 	if(verbose)
 	{
 		printKLs(out,QseqCount,IseqCount);
