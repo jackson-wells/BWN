@@ -340,9 +340,9 @@ int *getLength(char *fileName,int seqCount) /*returns an array of sequence lengt
 void read_fasta(char *fileName, struct input *query)
 {
     	char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
-	char *rev = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
-    	FILE *file = fopen(fileName,"r");
+	char *rev = (char *) malloc(MAX_LINE_LENGTH * sizeof(char)); 
     	int i = 0;
+	FILE *file = fopen(fileName,"r");
     	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
     	{
             	if(temp[0] == '>')      /*if line is a header*/
@@ -355,14 +355,14 @@ void read_fasta(char *fileName, struct input *query)
             	{
                 	continue;
             	}
-            	else    /*if line contains a nucleotide sequence*/
+            	else    /*if line contains an amino acid sequence*/
             	{
                     	strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
 			rev = reverse(temp);
 			strcat(rev,"$");
                     	strcat(temp,"$");
-                    	strcpy(query->sequence[i],temp);    /*saving string in memory*/
-			strcpy(query->reverse[i],rev);
+                    	strncpy(query->sequence[i],temp,strlen(temp));    /*saving string in memory*/
+			strncpy(query->reverse[i],rev,strlen(rev));
                     	query->length[i] = strlen(temp);
                     	i++;
 			memset(temp,0,strlen(temp));
@@ -370,10 +370,72 @@ void read_fasta(char *fileName, struct input *query)
             	}
     	}
 	fflush(file);
-    	fclose(file);
+	fclose(file);
 /*	free(temp);
 	free(rev);*/
 }
+
+void formatFasta(char *fileName)
+{
+	int i;
+	int lineCount = getLineCount(fileName);
+	char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
+	char **fileInfo = (char **) malloc(lineCount * sizeof(char *));
+	FILE *file;
+	for(i = 0; i < lineCount; i++)
+	{
+		fileInfo[i] = (char *) malloc(MAX_LINE_LENGTH * sizeof(char)); 
+	}
+	i = 0;
+	file = fopen(fileName,"r");
+	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
+        {
+		temp[strcspn(temp, "\n")] = 0;
+		temp[strcspn(temp, "\r")] = 0;
+		strcpy(fileInfo[i],temp);
+		i++;
+	}
+	fclose(file);
+	fflush(file);
+	file = fopen(fileName,"w+");
+	for(i = 0; i < lineCount; i++)
+	{
+		if(fileInfo[i][0] == '>' && i != 0)
+		{
+			fprintf(file,"\n%s\n",fileInfo[i]);
+		}
+		else if(fileInfo[i][0] == '>' && i == 0)
+		{
+			fprintf(file,"%s\n",fileInfo[i]);
+		}
+		else
+		{
+			fprintf(file,"%s",fileInfo[i]);
+		}
+	}
+	fflush(file);
+	fclose(file);
+	for(i = 0; i < lineCount; i++)
+        {
+		free(fileInfo[i]);
+	}
+	free(temp);
+	free(fileInfo);
+}
+
+int getLineCount(char *fileName)
+{
+	char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
+	int lineCount = 0;
+        FILE *file = fopen(fileName,"r");
+        while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
+        {
+		lineCount++;
+	}
+	fclose(file);
+	return lineCount;
+}
+
 
 /*  
 
@@ -531,6 +593,7 @@ struct input manageInputs(int argc, char *argv[],int *seqCount)
     	{	
 	        switch (c)
 	        {
+			printf("hello?\n");
 	            	case 'h':
 	                	printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-index <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta fileas a query\n-s\t\tFor input of a string as a query\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tTo designate the output file name\n-v\t\tTo produce verbose output\n\n");
 	                	exit(0);
@@ -633,6 +696,7 @@ void handleF(struct input *query,char *fileName)
     	int seqCount = getSeqCount(fileName);
     	int *seqLength = getLength(fileName,seqCount);
     	*query = initializeInputStruct(seqCount,seqLength);
+	formatFasta(fileName);
     	read_fasta(fileName, query);
 }
 
@@ -680,7 +744,10 @@ struct suffix *buildSuffixArray(char *sequence)
 {
     	struct suffix *SA = populateSuffixArray(sequence);
 	int length = strlen(sequence);
+/*	printf("here4.17\n");
+	printf("len:%d\n",strlen(sequence));*/
     	mergeSort(0,length-1,SA);
+/*	printf("here4.19\n");*/
     	return SA;
 }
 
@@ -1098,21 +1165,29 @@ int main(int argc, char *argv[])
 	for(i = 0; i < seqCount; i++)
 	{
 		m[i] = buildSuffixArray(query.sequence[i]);
+/*		printf("here4.1\n");*/
 		Rm[i] = buildSuffixArray(query.reverse[i]);
+/*		printf("here4.2\n");*/
 	}
+/*	printf("here5\n");*/
 	if(verbose)
 	{
 		printSuffixArray(m,seqCount,query.length);
 	}
 	transform = bwt(m,seqCount,query.length);	/*contains transforms of all query fastas*/
+/*	printf("here5.5\n");*/
 	revTransform = bwt(Rm,seqCount,query.length);
+/*	printf("here6\n");*/
 	if(verbose)
 	{
 		printBwt(transform,seqCount);
 	}
+/*	printf("here7\n");*/
 	index = calculateInterval(transform,seqCount,revTransform);
+/*	printf("here8\n");*/
 	intervalToFile(index,seqCount,m,transform,query,revTransform);
-/*    	deleteSuffixArray(m,seqCount,query.length);
+/*	printf("here9\n");
+    	deleteSuffixArray(m,seqCount,query.length);
     	deleteInputStruct(query,seqCount);*/
     	return 0;
 }

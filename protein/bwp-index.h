@@ -53,6 +53,6 @@ void mergeSort(int low, int high,struct suffix *m);
 void Merge(int low,int mid, int high, struct suffix *m);
 int fileExists(char *temp);
 int extensionExists(char *temp);
-
-
+int getLineCount(char *fileName);
+void formatFasta(char *fileName);
 #endif
