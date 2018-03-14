@@ -29,7 +29,6 @@ struct matches
 	struct matches *next;
 	int score;
 	char *tb;
-	int *tbi;
 	int traceLength;
 };
 
@@ -69,7 +68,7 @@ int getSeqCount(char *fileName);
 char *removePrefix(char *query);
 int ***calculateD(struct FMidx *index,int isc,struct input query,int qsc);
 struct results **inexactSearch(struct input query,int QseqCount,struct FMidx *index,int IseqCount,int ***D);
-struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high,int score,int pState,char *traceBack,int tbIdx,int *tempiTB);
+struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high,int score,int pState,char *traceBack,int tbIdx);
 char revBaseMap(int temp);
 void printInResults(struct results **out,int qsc,int isc,struct FMidx *index, struct input query);
 struct matches *pointToTail(struct matches *match);

@@ -879,7 +879,6 @@ int ***calculateD(struct FMidx *index,int isc, struct input query,int qsc)
 struct results **inexactSearch(struct input query,int qsc,struct FMidx *index,int isc,int ***D)
 {
 	int i,j;
-	int *traceBackI;
 	struct results **temp = (struct results **) malloc(qsc*sizeof(struct results *));
 	char *traceBack;
 	for(i = 0; i < qsc; i++)
@@ -889,24 +888,21 @@ struct results **inexactSearch(struct input query,int qsc,struct FMidx *index,in
 		{
 			temp[i][j].match = NULL;
 			traceBack = (char *) malloc(sizeof(char) * (MAX_MISMATCHES+query.length[i]));
-			traceBackI = (int *) malloc(sizeof(int) * (MAX_MISMATCHES+query.length[i]));
-			temp[i][j].match = inexRecur(index[j],D[i][j],query.sequence[i],query.length[i]-1,MAX_MISMATCHES,1,index[j].length-1,0,1,traceBack,0,traceBackI);
+			temp[i][j].match = inexRecur(index[j],D[i][j],query.sequence[i],query.length[i]-1,MAX_MISMATCHES,1,index[j].length-1,0,1,traceBack,0);
 			temp[i][j].match = sortMatches(temp[i][j].match);
 		}
 	}
 	return temp;
 }
 
-struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high,int score,int pState,char *traceBack,int tbIdx, int *tb)
+struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high,int score,int pState,char *traceBack,int tbIdx)
 {
 	int j;
-	int *tempiTB = (int *) malloc(sizeof(int) *tbIdx);
 	char *tempTB = (char *) malloc(sizeof(char)*tbIdx);
 	int tempP = pState;
         int tempS = score;
         struct matches *match = (struct matches *) malloc(sizeof(struct matches));
 	struct matches *results = NULL;
-	tempiTB = tb;
 	strcpy(tempTB,traceBack);
 	match->next = NULL;
 	if(i < 0)
@@ -922,23 +918,14 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 		match->low = low;
 		match->high = high;
 		match->score = score;
-
-
 		match->tb = (char *) malloc(sizeof(char) * tbIdx);
 		strncpy(match->tb,tempTB,tbIdx);
 		strcpy(match->tb,reverse(match->tb));
-
-		match->tbi = (int *) malloc(sizeof(int) * tbIdx);
-                match->tbi = tempiTB; /*new*/
-            /*    match->tbi = reverseInt(match->tbi);*/
-
-
-		match->traceLength = tbIdx;
+		match->traceLength = strlen(match->tb);
 		return match;
 	}
 	tempTB[tbIdx] = 'X';
-	tempiTB[tbIdx] = 2;
-	match = inexRecur(index,D,W,i-1,d-1,low,high,getScore(0,0,tempS,tempP,2),2,tempTB,tbIdx+1,tempiTB); /*GAP in index seq*/
+	match = inexRecur(index,D,W,i-1,d-1,low,high,getScore(0,0,tempS,tempP,2),2,tempTB,tbIdx+1); /*GAP in index seq*/
 	if(match != NULL){ results = getUnion(match,results);}
 	match = NULL;
 	tempP = pState;
@@ -954,17 +941,15 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 		if(k <= l)
 		{
 			tempTB[tbIdx] = 'Y';
-			tempiTB[tbIdx] = 3;
-		        match = inexRecur(index,D,W,i,d-1,k,l,getScore(j,baseMap(W[i]),tempS,tempP,3),3,tempTB,tbIdx+1,tempiTB); /*GAP in query*/
+		        match = inexRecur(index,D,W,i,d-1,k,l,getScore(j,baseMap(W[i]),tempS,tempP,3),3,tempTB,tbIdx+1); /*GAP in query*/
 			if(match != NULL){results = getUnion(match,results);}
 			match = NULL;
 			tempP = pState;
 			tempS = score;
-			tempiTB[tbIdx] = 1;
 			if(revBaseMap(j) == W[i]) /*match*/
 			{
 				tempTB[tbIdx] = 'M';
-				match = inexRecur(index,D,W,i-1,d,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,tempTB,tbIdx+1,tempiTB);
+				match = inexRecur(index,D,W,i-1,d,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,tempTB,tbIdx+1);
 				if(match != NULL){ results = getUnion(match,results);}
 				match = NULL;
 				tempP = pState;
@@ -975,11 +960,11 @@ struct matches *inexRecur(struct FMidx index, int *D,char *W,int i,int d, int lo
 				tempTB[tbIdx] = 'U';
 				if(subMat[j][baseMap(W[i])] > 0)
 				{
-					match = inexRecur(index,D,W,i-1,d,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,tempTB,tbIdx+1,tempiTB);
+					match = inexRecur(index,D,W,i-1,d,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,tempTB,tbIdx+1);
 				}
 				else
 				{
-					match = inexRecur(index,D,W,i-1,d-1,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,tempTB,tbIdx+1,tempiTB);
+					match = inexRecur(index,D,W,i-1,d-1,k,l,getScore(j,baseMap(W[i]),tempS,tempP,1),1,tempTB,tbIdx+1);
 				}
 				if(match != NULL){ results = getUnion(match,results);}
 				match = NULL;
@@ -1115,7 +1100,7 @@ void outputToFile(struct results **out, int qsc, int isc,struct FMidx *index,str
         fclose(f);
 }
 
-char *getSequenceAlignment(int i,int j,struct FMidx *index, struct input query,struct matches *match)
+/*char *getSequenceAlignment(int i,int j,struct FMidx *index, struct input query,struct matches *match)
 {
 	int z,q,miss,nLcount,temp;
 	char *sequence;
@@ -1205,9 +1190,8 @@ char *getSequenceAlignment(int i,int j,struct FMidx *index, struct input query,s
                         }
                 }
 	}
-	printf("here\"%s\"\nhere\n",sequence);	
 	return sequence;
-}
+}*/
 
 /*				*
  *	PRINTING FUNCTIONS	*
@@ -1237,10 +1221,8 @@ void printInResults(struct results **out,int qsc,int isc,struct FMidx *index, st
 	struct matches *temp;
 	for(i = 0; i < qsc; i++)
 	{
-		printf("here\n");
 		for(j = 0; j < isc; j++)
 		{
-			 printf("here\n");
 			temp = (struct matches *) malloc(sizeof(struct matches));
 			temp = out[i][j].match; /*causing seg fault*/
 			printf("\nindex: %s\nquery: %s\n\n-----------------------------------------------\n\n",index[j].desc,query.name[i]);
@@ -1255,6 +1237,7 @@ void printInResults(struct results **out,int qsc,int isc,struct FMidx *index, st
 					miss = 0;
 					for(z = 0; z < temp->traceLength; z++)
 					{
+					
 						if(z % 59 == 0 && z != 0)
 						{
 							printf("\n");
