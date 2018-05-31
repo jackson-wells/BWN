@@ -8,7 +8,6 @@
 ## Additions To Come:
  - Memory Clearage
  - BaseMap() using binary
- - Substitution matrix input
  - E-values of alignments
  - Induced sorting of SA for calculation in "linear" time
 
