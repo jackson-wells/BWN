@@ -11,6 +11,7 @@ struct input
 {
     	char **name;
     	int *length;
+	int maxLength;
 	char **sequence;
 	char **reverse;
 };

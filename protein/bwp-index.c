@@ -123,13 +123,19 @@ struct input initializeInputStruct( int seqCount, int *seqLength)
 {
 	struct input query;
     	int i;
-    	int n = 100;
+    	int n = 250; /*allowed header length*/
+	query.maxLength = 0;
     	query.length = (int *) malloc(seqCount * sizeof(int));
     	query.name = (char **) malloc(seqCount * sizeof(char *));
 	query.sequence = (char **) malloc(seqCount * sizeof(char *));
 	query.reverse = (char **) malloc(seqCount * sizeof(char *));
 	for(i = 0; i < seqCount;i++)
 	{
+		query.length[i] = seqLength[i];
+		if(seqLength[i] > query.maxLength)
+		{
+			query.maxLength = seqLength[i];
+		}
 		query.name[i] = (char *) malloc(n*(sizeof(char)));
 	        query.sequence[i] = (char *) malloc(seqLength[i] * sizeof(char));
 		query.reverse[i] = (char *) malloc(seqLength[i] * sizeof(char));
@@ -324,6 +330,7 @@ int *getLength(char *fileName,int seqCount) /*returns an array of sequence lengt
         return seqLength;
 }
 
+
 /*  
 
  	read_fasta
@@ -339,8 +346,8 @@ int *getLength(char *fileName,int seqCount) /*returns an array of sequence lengt
 */
 void read_fasta(char *fileName, struct input *query)
 {
-    	char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
-	char *rev = (char *) malloc(MAX_LINE_LENGTH * sizeof(char)); 
+    	char *temp = (char *) malloc(query->maxLength * sizeof(char));
+	char *rev = (char *) malloc(query->maxLength * sizeof(char)); 
     	int i = 0;
 	FILE *file = fopen(fileName,"r");
     	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
@@ -363,7 +370,7 @@ void read_fasta(char *fileName, struct input *query)
                     	strcat(temp,"$");
                     	strncpy(query->sequence[i],temp,strlen(temp));    /*saving string in memory*/
 			strncpy(query->reverse[i],rev,strlen(rev));
-                    	query->length[i] = strlen(temp);
+/*                    	query->length[i] = strlen(temp);*/
                     	i++;
 			memset(temp,0,strlen(temp));
 			memset(rev,0,strlen(rev));
@@ -392,7 +399,7 @@ void formatFasta(char *fileName)
         {
 		temp[strcspn(temp, "\n")] = 0;
 		temp[strcspn(temp, "\r")] = 0;
-		strcpy(fileInfo[i],temp);
+		strncpy(fileInfo[i],temp,strlen(temp)); /*Causing segFault*/
 		i++;
 	}
 	fclose(file);
@@ -696,7 +703,7 @@ void handleF(struct input *query,char *fileName)
     	int seqCount = getSeqCount(fileName);
     	int *seqLength = getLength(fileName,seqCount);
     	*query = initializeInputStruct(seqCount,seqLength);
-	formatFasta(fileName);
+/*	formatFasta(fileName);*/
     	read_fasta(fileName, query);
 }
 
