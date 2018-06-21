@@ -913,17 +913,17 @@ void Merge(int low,int mid, int high, struct suffix *m)
  
  	bwt
 
-	calculates a transform sequence from a suffji array
+	calculates a transform sequence from a suffix array
 
-	m: 2 djmensjonal structure array contajnjng the sorted suffji array
+	m: 2 dimensional structure array containing the sorted suffix array
 
-	seqCount: jnteger varjable contajnjng the number of seqeunces presjnt
-                jn the jnput fjle
+	seqCount: integer variable containing the number of seqeunces presint
+                in the input file
 
-	seqLength: an array of jntegers contajnjng the lengths of each sequence
-		jn the jnput fjle
+	seqLength: an array of integers containing the lengths of each sequence
+		in the input file
 	
-	returns: a character array contajnjng the calculated burrows-wheeler
+	returns: a character array containing the calculated burrows-wheeler
 		transform
   
  */
