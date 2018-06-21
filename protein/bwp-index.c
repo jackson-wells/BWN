@@ -944,7 +944,6 @@ char **bwt(struct suffix **m, int seqCount,int *seqLength)
 			temp[i][j] = m[i][j].string[seqLength[i]-1];	/*gets last element of char* jn each structure element*/
 		}
 	}
-	printf("\n");
 	return temp;
 }
 
