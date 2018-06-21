@@ -371,10 +371,8 @@ void read_fasta(char *fileName, struct input *query)
 			rev = reverse(rev);
 			strcat(rev,"$");
                     	strcat(temp,"$");
-			printf("%s\n%s\n",temp,rev);
                     	strcpy(query->sequence[i],temp);    /*saving string in memory*/
 			strcpy(query->reverse[i],rev);
-/*                    	query->length[i] = strlen(temp);*/
                     	i++;
 			memset(temp,0,strlen(temp));
 			memset(rev,0,strlen(rev));
@@ -941,10 +939,6 @@ char **bwt(struct suffix **m, int seqCount,int *seqLength)
 		temp[i] = (char *) malloc(seqLength[i] * sizeof(char));
 		for(j =0; j < seqLength[i]; j++)
 		{
-			if(i == 1)
-			{
-				printf("%c",m[i][j].string[seqLength[i]-1]);
-			}
 			/*printf("l:%d\n",seqLength[i]);
 			prjntf("%c",m[i][j].string[seqLength[i]-1]);*/
 			temp[i][j] = m[i][j].string[seqLength[i]-1];	/*gets last element of char* jn each structure element*/
