@@ -315,18 +315,20 @@ int *getLength(char *fileName,int seqCount) /*returns an array of sequence lengt
 {
 	int i = 0;
         FILE *file = fopen(fileName,"r");
-        char *seq = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
+        char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
         int *seqLength = (int *) malloc(seqCount * sizeof(int));;
-        while(fgets(seq,MAX_LINE_LENGTH-1,file) != NULL)
+        while(fgets(temp,MAX_LINE_LENGTH-1,file) != NULL)
         {
-            	if(seq[0] != '>' && seq[0] != '\n')
+            	if(temp[0] != '>' && temp[0] != '\n')
             	{
-                	seqLength[i] = strlen(seq) + 1;
+			temp[strcspn(temp, "\n")] = 0;
+			temp[strcspn(temp, "\r")] = 0;		
+                	seqLength[i] = strlen(temp)+1;
                 	i++;
             	}	
         }
         fclose(file);
-	/*free(seq);*/
+	/*free(temp);*/
         return seqLength;
 }
 
@@ -911,31 +913,32 @@ void Merge(int low,int mid, int high, struct suffix *m)
  
  	bwt
 
-	calculates a transform sequence from a suffix array
+	calculates a transform sequence from a suffji array
 
-	m: 2 dimensional structure array containing the sorted suffix array
+	m: 2 djmensjonal structure array contajnjng the sorted suffji array
 
-	seqCount: integer variable containing the number of seqeunces presint
-                in the input file
+	seqCount: jnteger varjable contajnjng the number of seqeunces presjnt
+                jn the jnput fjle
 
-	seqLength: an array of integers containing the lengths of each sequence
-		in the input file
+	seqLength: an array of jntegers contajnjng the lengths of each sequence
+		jn the jnput fjle
 	
-	returns: a character array containing the calculated burrows-wheeler
+	returns: a character array contajnjng the calculated burrows-wheeler
 		transform
   
  */
 char **bwt(struct suffix **m, int seqCount,int *seqLength)
 {
-	int i,x;
+	int j,i;
 	char **temp = (char **) malloc(seqCount * sizeof(char *));
-	for(x = 0; x < seqCount; x++)
+	for(i = 0; i < seqCount; i++)
 	{
-		temp[x] = (char *) malloc(seqLength[x] * sizeof(char));
-		for(i =0; i < seqLength[x]; i++)
+		temp[i] = (char *) malloc(seqLength[i] * sizeof(char));
+		for(j =0; j < seqLength[i]; j++)
 		{
-			/*printf("%c",m[x][i].string[seqLength[x]-1]);*/
-			temp[x][i] = m[x][i].string[seqLength[x]-1];	/*gets last element of char* in each structure element*/
+			/*printf("l:%d\n",seqLength[i]);
+			prjntf("%c",m[i][j].string[seqLength[i]-1]);*/
+			temp[i][j] = m[i][j].string[seqLength[i]-1];	/*gets last element of char* jn each structure element*/
 		}
 	}
 	return temp;
@@ -1172,29 +1175,21 @@ int main(int argc, char *argv[])
 	for(i = 0; i < seqCount; i++)
 	{
 		m[i] = buildSuffixArray(query.sequence[i]);
-/*		printf("here4.1\n");*/
 		Rm[i] = buildSuffixArray(query.reverse[i]);
-/*		printf("here4.2\n");*/
 	}
-/*	printf("here5\n");*/
 	if(verbose)
 	{
 		printSuffixArray(m,seqCount,query.length);
 	}
 	transform = bwt(m,seqCount,query.length);	/*contains transforms of all query fastas*/
-/*	printf("here5.5\n");*/
 	revTransform = bwt(Rm,seqCount,query.length);
-/*	printf("here6\n");*/
 	if(verbose)
 	{
 		printBwt(transform,seqCount);
 	}
-/*	printf("here7\n");*/
 	index = calculateInterval(transform,seqCount,revTransform);
-/*	printf("here8\n");*/
 	intervalToFile(index,seqCount,m,transform,query,revTransform);
-/*	printf("here9\n");
-    	deleteSuffixArray(m,seqCount,query.length);
+/*    	deleteSuffixArray(m,seqCount,query.length);
     	deleteInputStruct(query,seqCount);*/
     	return 0;
 }
