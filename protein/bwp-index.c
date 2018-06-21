@@ -367,11 +367,13 @@ void read_fasta(char *fileName, struct input *query)
             	else    /*if line contains an amino acid sequence*/
             	{
                     	strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
-			rev = reverse(temp);
+			strcpy(rev,temp);
+			rev = reverse(rev);
 			strcat(rev,"$");
                     	strcat(temp,"$");
-                    	strncpy(query->sequence[i],temp,strlen(temp));    /*saving string in memory*/
-			strncpy(query->reverse[i],rev,strlen(rev));
+			printf("%s\n%s\n",temp,rev);
+                    	strcpy(query->sequence[i],temp);    /*saving string in memory*/
+			strcpy(query->reverse[i],rev);
 /*                    	query->length[i] = strlen(temp);*/
                     	i++;
 			memset(temp,0,strlen(temp));
@@ -481,15 +483,18 @@ void charToEnd(char* input)
 */
 char* reverse(char *str)
 {
-	char *temp = (char *) malloc(strlen(str)*sizeof(char));
-	int i;
-	int idx = 0;
-	for(i = strlen(str)-1; i > -1; i=i-1)
+	char *p1, *p2;
+      	if (! str || ! *str)
 	{
-		temp[idx] = str[i];
-		idx++;
+            return str;
 	}
-	return temp;
+      	for (p1 = str, p2 = str + strlen(str) - 1; p2 > p1; ++p1, --p2)
+      	{
+            	*p1 ^= *p2;
+            	*p2 ^= *p1;
+            	*p1 ^= *p2;
+      	}
+      	return str;
 }
 
 /*
@@ -936,11 +941,16 @@ char **bwt(struct suffix **m, int seqCount,int *seqLength)
 		temp[i] = (char *) malloc(seqLength[i] * sizeof(char));
 		for(j =0; j < seqLength[i]; j++)
 		{
+			if(i == 1)
+			{
+				printf("%c",m[i][j].string[seqLength[i]-1]);
+			}
 			/*printf("l:%d\n",seqLength[i]);
 			prjntf("%c",m[i][j].string[seqLength[i]-1]);*/
 			temp[i][j] = m[i][j].string[seqLength[i]-1];	/*gets last element of char* jn each structure element*/
 		}
 	}
+	printf("\n");
 	return temp;
 }
 
