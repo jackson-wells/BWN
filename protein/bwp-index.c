@@ -757,7 +757,8 @@ struct suffix *buildSuffixArray(char *sequence)
     	struct suffix *SA = populateSuffixArray(sequence);
 	int length = strlen(sequence);
 /*	printf("here4.17\n");
-	printf("len:%d\n",strlen(sequence));*/
+	printf("len:%d\n",strlen(sequence));
+	printf("%s\n",sequence);*/
     	mergeSort(0,length-1,SA);
 /*	printf("here4.19\n");*/
     	return SA;
@@ -788,12 +789,12 @@ struct suffix *populateSuffixArray(char *sequence)
                 SA[j].pos = j + 1;
                	if(j == 0)
                	{
-               		strcpy(SA[j].string,tempSeq);
+               		strncpy(SA[j].string,tempSeq,length);
                	}
                	if(j > 0)
                	{
                	    	charToEnd(tempSeq);
-               	    	strcpy(SA[j].string,tempSeq);
+               	    	strncpy(SA[j].string,tempSeq,length);
                	}
         }
 	return SA;
@@ -937,11 +938,23 @@ char **bwt(struct suffix **m, int seqCount,int *seqLength)
 	for(i = 0; i < seqCount; i++)
 	{
 		temp[i] = (char *) malloc(seqLength[i] * sizeof(char));
-		for(j =0; j < seqLength[i]; j++)
+		for(j = 0; j < seqLength[i]; j++)
 		{
-			/*printf("l:%d\n",seqLength[i]);
-			prjntf("%c",m[i][j].string[seqLength[i]-1]);*/
+			if(i == 1)
+			{
+				printf("l:%d\n",seqLength[i]);
+				printf("%c\n",m[i][j].string[seqLength[i]-1]);
+			}
 			temp[i][j] = m[i][j].string[seqLength[i]-1];	/*gets last element of char* jn each structure element*/
+			if(i == 1)
+                        {
+                                printf("j:%d\n",j);
+                                printf("%c\n",temp[i][j]);
+				if(j == 1895)
+				{
+					printf("%s\n",temp[i]);		
+				}
+			}
 		}
 	}
 	return temp;
@@ -979,11 +992,13 @@ struct FMidx *calculateInterval(char **transform, int seqCount, char **revTransf
     	int i,j,length;
     	for(i = 0; i < seqCount; i++)
     	{
+		printf("i:%d\n",i);
 		index[i].O = (int **) malloc(20*sizeof(int **));
 		index[i].R = (int **) malloc(20*sizeof(int **));
         	for(j = 0; j < 20; j++) /*looping thru each char*/
         	{
 			length = strlen(transform[i]);
+			printf("l:%d\n",length);
 			index[i].O[j] = (int *) malloc(length*sizeof(int));
 			index[i].R[j] = (int *) malloc(length*sizeof(int));
 			index[i].R[j] = calculateO(revTransform[i],j);
@@ -1026,6 +1041,8 @@ int *calculateO(char *sequence,int letterValue)
         int count = 0;
 	int length = strlen(sequence);
 	int *value = (int *) malloc(length * sizeof(int)); 
+	printf("l:%d\n",length);
+	printf("%s\n",sequence);
         for(i = 0; i < length; i++)
         {
 		if(sequence[i] != '$')
@@ -1190,6 +1207,8 @@ int main(int argc, char *argv[])
 	{
 		printBwt(transform,seqCount);
 	}
+	printf("broken?:%s\n",revTransform[1]);
+	exit(0);
 	index = calculateInterval(transform,seqCount,revTransform);
 	intervalToFile(index,seqCount,m,transform,query,revTransform);
 /*    	deleteSuffixArray(m,seqCount,query.length);
