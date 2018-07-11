@@ -39,10 +39,13 @@ void printSuffixArray(struct suffix **m,int seqCount, int *seqLength)
 	int i,j;
 	for(i= 0; i < seqCount;i++)
 	{
-		printf("\nIndex Sequence: %d\n",i);
-		for(j=0; j < seqLength[i]; j++)
+		if(i == 1)
 		{
-			printf("%d\t%d\t%s\n",j,m[i][j].pos-1,m[i][j].string);
+			printf("\nIndex Sequence: %d\n",i);
+			for(j=0; j < seqLength[i]; j++)
+			{
+				printf("%d\t%d\t%s\n",j,m[i][j].pos-1,m[i][j].string);
+			}
 		}
 	}
 	printf("\n");
@@ -335,7 +338,7 @@ int *getLength(char *fileName,int seqCount) /*returns an array of sequence lengt
 
 /*  
 
- 	read_fasta
+ 	readFasta
 
    	stores fasta file information into memory, adds "$" character
 	to sequence and reverse sequence
@@ -346,7 +349,7 @@ int *getLength(char *fileName,int seqCount) /*returns an array of sequence lengt
 	query: structure variable to contain file information
 
 */
-void read_fasta(char *fileName, struct input *query)
+void readFasta(char *fileName, struct input *query)
 {
     	char *temp = (char *) malloc(query->maxLength * sizeof(char));
 	char *rev = (char *) malloc(query->maxLength * sizeof(char)); 
@@ -368,7 +371,7 @@ void read_fasta(char *fileName, struct input *query)
             	{
                     	strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
 			strcpy(rev,temp);
-			rev = reverse(rev);
+			rev = reverse(rev,strlen(rev));
 			strcat(rev,"$");
                     	strcat(temp,"$");
                     	strcpy(query->sequence[i],temp);    /*saving string in memory*/
@@ -456,13 +459,12 @@ int getLineCount(char *fileName)
 	input: string to be shifted 
 	
 */
-void charToEnd(char* input)
-{			
-	const int len = strlen(input);
+void charToEnd(char* input,int len)
+{
     	if(len > 1)
     	{
         	const char first = input[0];
-        	memmove(input,input+1,len-1);
+        	memmove(input,input+1,len-1); 
         	input[len -1] = first;
     	}
 }
@@ -479,14 +481,14 @@ void charToEnd(char* input)
 		of the input string
 
 */
-char* reverse(char *str)
+char* reverse(char *str, int length)
 {
 	char *p1, *p2;
       	if (! str || ! *str)
 	{
             return str;
 	}
-      	for (p1 = str, p2 = str + strlen(str) - 1; p2 > p1; ++p1, --p2)
+      	for (p1 = str, p2 = str + length - 1; p2 > p1; ++p1, --p2)
       	{
             	*p1 ^= *p2;
             	*p2 ^= *p1;
@@ -675,11 +677,12 @@ struct input manageInputs(int argc, char *argv[],int *seqCount)
 */
 void handleS(struct input *query, char *sequence)
 {
+	char *rev;
 	int seqCount = 1;
 	int *seqLength = (int *) malloc(sizeof(int));
-	char *rev = reverse(sequence);
+	seqLength[0] = strlen(sequence) + 1;
+	rev = reverse(sequence,seqLength[0]);
     	printf("\nHere is the string you entered:\n%s\n\n",sequence);
-    	seqLength[0] = strlen(sequence) + 1;
 	strcat(rev,"$");
     	strcat(sequence,"$");
     	*query = initializeInputStruct(seqCount,seqLength);
@@ -709,7 +712,7 @@ void handleF(struct input *query,char *fileName)
     	int *seqLength = getLength(fileName,seqCount);
     	*query = initializeInputStruct(seqCount,seqLength);
 /*	formatFasta(fileName);*/
-    	read_fasta(fileName, query);
+    	readFasta(fileName, query);
 }
 
 
@@ -752,15 +755,10 @@ struct suffix *newSuffixArray(int seqLength)
 
 
 */
-struct suffix *buildSuffixArray(char *sequence)
+struct suffix *buildSuffixArray(char *sequence,int length)
 {
-    	struct suffix *SA = populateSuffixArray(sequence);
-	int length = strlen(sequence);
-/*	printf("here4.17\n");
-	printf("len:%d\n",strlen(sequence));
-	printf("%s\n",sequence);*/
-    	mergeSort(0,length-1,SA);
-/*	printf("here4.19\n");*/
+    	struct suffix *SA = populateSuffixArray(sequence,length);
+    	mergeSort(0,length-1,SA, length);
     	return SA;
 }
 
@@ -777,24 +775,22 @@ struct suffix *buildSuffixArray(char *sequence)
 
 
 */
-struct suffix *populateSuffixArray(char *sequence)
+struct suffix *populateSuffixArray(char *sequence,int length)
 {
-	int length = strlen(sequence);
 	struct suffix *SA = newSuffixArray(length);
 	int j;
-        char *tempSeq = sequence;
-	length = strlen(sequence);
         for(j = 0; j < length; j++)
         {
                 SA[j].pos = j + 1;
                	if(j == 0)
                	{
-               		strncpy(SA[j].string,tempSeq,length);
+               		strcpy(SA[j].string,sequence);
                	}
                	if(j > 0)
                	{
-               	    	charToEnd(tempSeq);
-               	    	strncpy(SA[j].string,tempSeq,length);
+               	    	charToEnd(sequence,length);
+               	    	strcpy(SA[j].string,sequence);
+
                	}
         }
 	return SA;
@@ -820,14 +816,14 @@ struct suffix *populateSuffixArray(char *sequence)
 
 
 */
-void mergeSort(int low, int high,struct suffix *m)
+void mergeSort(int low, int high,struct suffix *m, int length)
 {
-	if(low<high)
+	if(low < high)
  	{
-        	int mid = low+(high - low)/2;
-        	mergeSort(low,mid,m);
-        	mergeSort(mid+1,high,m);
-        	Merge(low,mid,high,m);
+        	int mid = low + ((high - low)/2);
+        	mergeSort(low,mid,m, length);
+        	mergeSort(mid+1,high,m, length);
+        	Merge(low,mid,high,m,length);
     	}
 }
 
@@ -851,13 +847,13 @@ void mergeSort(int low, int high,struct suffix *m)
 
 
  */
-void Merge(int low,int mid, int high, struct suffix *m)
+void Merge(int low,int mid, int high, struct suffix *m,int seqLength)
 {
 	int j = 0;
 	int k = low;
     	int nL= mid-low+1;
     	int nR= high-mid;
-	int seqLength = strlen(m[0].string);
+/*	int seqLength = strlen(m[0].string);*/
 	int i = 0;
 	struct suffix *tempL;
 	struct suffix *tempR;
@@ -866,13 +862,13 @@ void Merge(int low,int mid, int high, struct suffix *m)
 	for(i = 0; i < nL; i++)
 	{
 		tempL[i].string = malloc(seqLength * sizeof(char)); /*Memory allocation for string in struct*/
-		strcpy(tempL[i].string,m[low+i].string); 
+		strncpy(tempL[i].string,m[low+i].string,seqLength); 
 		tempL[i].pos = m[low+i].pos;
 	}
 	for(i = 0; i < nR; i++)
         {
 		tempR[i].string = malloc(seqLength * sizeof(char));
-                strcpy(tempR[i].string,m[mid+i+1].string);
+                strncpy(tempR[i].string,m[mid+i+1].string,seqLength);
                 tempR[i].pos = m[mid+i+1].pos;
         }
 	i = 0;
@@ -880,13 +876,13 @@ void Merge(int low,int mid, int high, struct suffix *m)
     	{
         	if (strcmp(tempL[i].string,tempR[j].string) <= 0)
         	{
-        	    	strcpy(m[k].string,tempL[i].string);
+        	    	strncpy(m[k].string,tempL[i].string,seqLength);
 			m[k].pos = tempL[i].pos;
         	    	i++;
         	}
         	else
         	{
-			strcpy(m[k].string,tempR[j].string);
+			strncpy(m[k].string,tempR[j].string,seqLength);
                         m[k].pos = tempR[j].pos;
         	    	j++;
         	}
@@ -894,18 +890,21 @@ void Merge(int low,int mid, int high, struct suffix *m)
     	}
 	while(i < nL)
     	{
-		strcpy(m[k].string,tempL[i].string);
+		strncpy(m[k].string,tempL[i].string,seqLength);
                 m[k].pos = tempL[i].pos;
         	i++;
         	k++;
     	}
 	while (j < nR)
     	{
-		strcpy(m[k].string,tempR[j].string);
+		strncpy(m[k].string,tempR[j].string,seqLength);
                 m[k].pos = tempR[j].pos;
         	j++;
         	k++;
     	}
+	memset(tempL,0,nL);
+	memset(tempR,0,nR);
+	
 }
 
 /* 						*
@@ -940,13 +939,13 @@ char **bwt(struct suffix **m, int seqCount,int *seqLength)
 		temp[i] = (char *) malloc(seqLength[i] * sizeof(char));
 		for(j = 0; j < seqLength[i]; j++)
 		{
-			if(i == 1)
+/*			if(i == 1)
 			{
 				printf("l:%d\n",seqLength[i]);
 				printf("%c\n",m[i][j].string[seqLength[i]-1]);
-			}
+			}*/
 			temp[i][j] = m[i][j].string[seqLength[i]-1];	/*gets last element of char* jn each structure element*/
-			if(i == 1)
+/*			if(i == 1)
                         {
                                 printf("j:%d\n",j);
                                 printf("%c\n",temp[i][j]);
@@ -954,7 +953,7 @@ char **bwt(struct suffix **m, int seqCount,int *seqLength)
 				{
 					printf("%s\n",temp[i]);		
 				}
-			}
+			}*/
 		}
 	}
 	return temp;
@@ -986,23 +985,22 @@ char **bwt(struct suffix **m, int seqCount,int *seqLength)
 		each sequence in the input file
 
 */
-struct FMidx *calculateInterval(char **transform, int seqCount, char **revTransform)
+struct FMidx *calculateInterval(char **transform, int seqCount, char **revTransform, int *seqLength)
 {
     	struct FMidx *index = (struct FMidx *) malloc(seqCount * sizeof(struct FMidx));
-    	int i,j,length;
+    	int i,j;
     	for(i = 0; i < seqCount; i++)
     	{
-		printf("i:%d\n",i);
+/*		printf("i:%d\n",i);*/
 		index[i].O = (int **) malloc(20*sizeof(int **));
 		index[i].R = (int **) malloc(20*sizeof(int **));
         	for(j = 0; j < 20; j++) /*looping thru each char*/
         	{
-			length = strlen(transform[i]);
-			printf("l:%d\n",length);
-			index[i].O[j] = (int *) malloc(length*sizeof(int));
-			index[i].R[j] = (int *) malloc(length*sizeof(int));
-			index[i].R[j] = calculateO(revTransform[i],j);
-           		index[i].O[j] = calculateO(transform[i],j);
+/*			printf("l:%d\n",seqLength[i]);*/
+			index[i].O[j] = (int *) malloc(seqLength[i]*sizeof(int));
+			index[i].R[j] = (int *) malloc(seqLength[i]*sizeof(int));
+			index[i].R[j] = calculateO(revTransform[i],j,seqLength[i]);
+           		index[i].O[j] = calculateO(transform[i],j,seqLength[i]);
 			if(j == 0)				
 /*Base Cases covered to decrease runtime*/
 			{
@@ -1010,7 +1008,7 @@ struct FMidx *calculateInterval(char **transform, int seqCount, char **revTransf
 			}
 			else
 			{
-            			index[i].C[j] = calculateC(transform[i],j);
+            			index[i].C[j] = calculateC(transform[i],j,seqLength[i]);
 			}
         	}
     	}
@@ -1035,14 +1033,13 @@ struct FMidx *calculateInterval(char **transform, int seqCount, char **revTransf
 
 			
 */
-int *calculateO(char *sequence,int letterValue)
+int *calculateO(char *sequence,int letterValue,int length)
 {
 	int i;
         int count = 0;
-	int length = strlen(sequence);
 	int *value = (int *) malloc(length * sizeof(int)); 
-	printf("l:%d\n",length);
-	printf("%s\n",sequence);
+/*	printf("l:%d\n",length);
+	printf("%s\n",sequence);*/
         for(i = 0; i < length; i++)
         {
 		if(sequence[i] != '$')
@@ -1073,12 +1070,11 @@ int *calculateO(char *sequence,int letterValue)
                 excluding "$"
 
  */
-int calculateC(char *sequence, int letterValue)
+int calculateC(char *sequence, int letterValue, int length)
 {
     	int i;
 	int count = 0;
-	int temp = strlen(sequence);
-        for(i = 0; i < temp; i++)
+        for(i = 0; i < length; i++)
         {
 		if(sequence[i] != '$')
         	{	
@@ -1194,9 +1190,17 @@ int main(int argc, char *argv[])
 	int i;
 	for(i = 0; i < seqCount; i++)
 	{
-		m[i] = buildSuffixArray(query.sequence[i]);
-		Rm[i] = buildSuffixArray(query.reverse[i]);
+		printf("i:%d\n",i);
+		
+		m[i] = buildSuffixArray(query.sequence[i],query.length[i]);
+		Rm[i] = buildSuffixArray(query.reverse[i],query.length[i]);
+/*		if(i == 1)
+		{
+			printf("%d\n%s\n%s\n",query.length[i],m[i][0].string,Rm[i][0].string);
+			exit(0);
+		}*/
 	}
+/*	exit(0);*/
 	if(verbose)
 	{
 		printSuffixArray(m,seqCount,query.length);
@@ -1208,8 +1212,8 @@ int main(int argc, char *argv[])
 		printBwt(transform,seqCount);
 	}
 	printf("broken?:%s\n",revTransform[1]);
-	exit(0);
-	index = calculateInterval(transform,seqCount,revTransform);
+	/*exit(0);*/
+	index = calculateInterval(transform,seqCount,revTransform,query.length);
 	intervalToFile(index,seqCount,m,transform,query,revTransform);
 /*    	deleteSuffixArray(m,seqCount,query.length);
     	deleteInputStruct(query,seqCount);*/
