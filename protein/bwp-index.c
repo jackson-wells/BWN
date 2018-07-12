@@ -327,7 +327,7 @@ int *getLength(char *fileName,int seqCount) /*returns an array of sequence lengt
 			temp[strcspn(temp, "\n")] = 0;
 			temp[strcspn(temp, "\r")] = 0;		
                 	seqLength[i] = strlen(temp)+1;
-                	i++;
+	                i++;
             	}	
         }
         fclose(file);
@@ -930,35 +930,16 @@ void Merge(int low,int mid, int high, struct suffix *m,int seqLength)
 		transform
   
  */
-char **bwt(struct suffix **m, int seqCount,int *seqLength)
+char *bwt(struct suffix *m, int seqLength)
 {
-	int j,i;
-	char **temp = (char **) malloc(seqCount * sizeof(char *));
-	for(i = 0; i < seqCount; i++)
-	{
-		temp[i] = (char *) malloc(seqLength[i] * sizeof(char));
-		for(j = 0; j < seqLength[i]; j++)
-		{
-/*			if(i == 1)
-			{
-				printf("l:%d\n",seqLength[i]);
-				printf("%c\n",m[i][j].string[seqLength[i]-1]);
-			}*/
-			temp[i][j] = m[i][j].string[seqLength[i]-1];	/*gets last element of char* jn each structure element*/
-/*			if(i == 1)
-                        {
-                                printf("j:%d\n",j);
-                                printf("%c\n",temp[i][j]);
-				if(j == 1895)
-				{
-					printf("%s\n",temp[i]);		
-				}
-			}*/
-		}
-	}
-	return temp;
+        int i;
+        char *temp = (char *) malloc(seqLength * sizeof(char));
+        for(i = 0; i < seqLength; i++)
+        {
+            	temp[i] = m[i].string[seqLength-1];    /*gets last element of char* jn each structure element*/
+        }
+        return temp;
 }
-
 
 
 /* 						*
@@ -985,22 +966,20 @@ char **bwt(struct suffix **m, int seqCount,int *seqLength)
 		each sequence in the input file
 
 */
-struct FMidx *calculateInterval(char **transform, int seqCount, char **revTransform, int *seqLength)
+struct FMidx *calculateInterval(struct transform *transform, int seqCount, struct transform *revTransform, int *seqLength)
 {
     	struct FMidx *index = (struct FMidx *) malloc(seqCount * sizeof(struct FMidx));
     	int i,j;
     	for(i = 0; i < seqCount; i++)
     	{
-/*		printf("i:%d\n",i);*/
 		index[i].O = (int **) malloc(20*sizeof(int **));
 		index[i].R = (int **) malloc(20*sizeof(int **));
         	for(j = 0; j < 20; j++) /*looping thru each char*/
         	{
-/*			printf("l:%d\n",seqLength[i]);*/
 			index[i].O[j] = (int *) malloc(seqLength[i]*sizeof(int));
 			index[i].R[j] = (int *) malloc(seqLength[i]*sizeof(int));
-			index[i].R[j] = calculateO(revTransform[i],j,seqLength[i]);
-           		index[i].O[j] = calculateO(transform[i],j,seqLength[i]);
+			index[i].R[j] = calculateO(revTransform[i].string,j,seqLength[i]);
+           		index[i].O[j] = calculateO(transform[i].string,j,seqLength[i]);
 			if(j == 0)				
 /*Base Cases covered to decrease runtime*/
 			{
@@ -1008,7 +987,7 @@ struct FMidx *calculateInterval(char **transform, int seqCount, char **revTransf
 			}
 			else
 			{
-            			index[i].C[j] = calculateC(transform[i],j,seqLength[i]);
+            			index[i].C[j] = calculateC(transform[i].string,j,seqLength[i]);
 			}
         	}
     	}
@@ -1038,8 +1017,6 @@ int *calculateO(char *sequence,int letterValue,int length)
 	int i;
         int count = 0;
 	int *value = (int *) malloc(length * sizeof(int)); 
-/*	printf("l:%d\n",length);
-	printf("%s\n",sequence);*/
         for(i = 0; i < length; i++)
         {
 		if(sequence[i] != '$')
@@ -1116,7 +1093,7 @@ int calculateC(char *sequence, int letterValue, int length)
 
 
 */
-void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **transform, struct input query,char **revTransform)
+void intervalToFile(struct FMidx *index, int seqCount, struct transform *transform, struct input query,struct transform *revTransform)
 {
 	FILE *f;
 	int i,j,z,q;
@@ -1145,9 +1122,9 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
 		fprintf(f,"d:%s\nl:%d\nq:%s\ns:",query.name[i],query.length[i],query.sequence[i]+1);
 		for(q = 0; q < query.length[i]; q++)
 		{
-			fprintf(f,"%d ",m[i][q].pos);
+			fprintf(f,"%d ",transform[i].positions[q]);
 		}
-                fprintf(f,"\nt:%s\nf:%s\nc:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",transform[i],revTransform[i],index[i].C[0],index[i].C[1],index[i].C[2],index[i].C[3],index[i].C[4],index[i].C[5],index[i].C[6],index[i].C[7],index[i].C[8],index[i].C[9],index[i].C[10],index[i].C[11],index[i].C[12],index[i].C[13],index[i].C[14],index[i].C[15],index[i].C[16],index[i].C[17],index[i].C[18],index[i].C[19]);
+                fprintf(f,"\nt:%s\nf:%s\nc:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",transform[i].string,revTransform[i].string,index[i].C[0],index[i].C[1],index[i].C[2],index[i].C[3],index[i].C[4],index[i].C[5],index[i].C[6],index[i].C[7],index[i].C[8],index[i].C[9],index[i].C[10],index[i].C[11],index[i].C[12],index[i].C[13],index[i].C[14],index[i].C[15],index[i].C[16],index[i].C[17],index[i].C[18],index[i].C[19]);
                 for(j= 0; j < 20; j++)
                 {
 			fprintf(f,"o:");
@@ -1171,6 +1148,32 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
 	fclose(f);
 }
 
+int *positions(struct suffix *m, int seqLength)
+{
+	int i;
+	int *temp = (int *) malloc(sizeof(int)*seqLength);
+	for(i = 0; i < seqLength; i ++)
+	{
+		temp[i] = m[i].pos;
+	}
+	return temp;
+}
+
+
+struct transform *calculateTransform(struct input query, int seqCount)
+{
+	int i;
+	struct transform *tempTransform = (struct transform *) malloc(sizeof(struct transform)*seqCount);
+	struct suffix *m;
+	for(i = 0; i < seqCount; i ++)
+	{
+		m = buildSuffixArray(query.sequence[i],query.length[i]);
+		tempTransform[i].string = bwt(m, query.length[i]);
+		tempTransform[i].positions = positions(m, query.length[i]);
+/*		memmove(m,0,query.length[i]);*/
+	}
+	return tempTransform;
+}
 
 
 /* 			*
@@ -1181,40 +1184,11 @@ void intervalToFile(struct FMidx *index, int seqCount,struct suffix **m, char **
 int main(int argc, char *argv[])
 {
 	int seqCount = 0;	/*will contain # of sequences, is written by manageInputs()*/
-	char **revTransform;
-	char **transform;
-	struct FMidx *index;
 	struct input query = manageInputs(argc,argv,&seqCount);
-	struct suffix **m = (struct suffix **) malloc(seqCount*sizeof(struct suffix *));
-	struct suffix **Rm = (struct suffix **) malloc(seqCount*sizeof(struct suffix *));
-	int i;
-	for(i = 0; i < seqCount; i++)
-	{
-		printf("i:%d\n",i);
-		
-		m[i] = buildSuffixArray(query.sequence[i],query.length[i]);
-		Rm[i] = buildSuffixArray(query.reverse[i],query.length[i]);
-/*		if(i == 1)
-		{
-			printf("%d\n%s\n%s\n",query.length[i],m[i][0].string,Rm[i][0].string);
-			exit(0);
-		}*/
-	}
-/*	exit(0);*/
-	if(verbose)
-	{
-		printSuffixArray(m,seqCount,query.length);
-	}
-	transform = bwt(m,seqCount,query.length);	/*contains transforms of all query fastas*/
-	revTransform = bwt(Rm,seqCount,query.length);
-	if(verbose)
-	{
-		printBwt(transform,seqCount);
-	}
-	printf("broken?:%s\n",revTransform[1]);
-	/*exit(0);*/
-	index = calculateInterval(transform,seqCount,revTransform,query.length);
-	intervalToFile(index,seqCount,m,transform,query,revTransform);
+	struct transform *transform = calculateTransform(query,seqCount);	
+	struct transform *revTransform = calculateTransform(query,seqCount);
+	struct FMidx *index = calculateInterval(transform,seqCount,revTransform,query.length);
+	intervalToFile(index,seqCount,transform,query,revTransform);
 /*    	deleteSuffixArray(m,seqCount,query.length);
     	deleteInputStruct(query,seqCount);*/
     	return 0;
