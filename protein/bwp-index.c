@@ -1175,6 +1175,21 @@ struct transform *calculateTransform(struct input query, int seqCount)
 	return tempTransform;
 }
 
+struct transform *calculateReverseTransform(struct input query, int seqCount)
+{
+        int i;
+        struct transform *tempTransform = (struct transform *) malloc(sizeof(struct transform)*seqCount);
+        struct suffix *m;
+        for(i = 0; i < seqCount; i ++)
+        {
+                m = buildSuffixArray(query.reverse[i],query.length[i]);
+                tempTransform[i].string = bwt(m, query.length[i]);
+                tempTransform[i].positions = positions(m, query.length[i]);
+/*              memmove(m,0,query.length[i]);*/
+        }
+        return tempTransform;
+}
+
 
 /* 			*
  *  	MAIN FUNCTION 	*
@@ -1186,7 +1201,7 @@ int main(int argc, char *argv[])
 	int seqCount = 0;	/*will contain # of sequences, is written by manageInputs()*/
 	struct input query = manageInputs(argc,argv,&seqCount);
 	struct transform *transform = calculateTransform(query,seqCount);	
-	struct transform *revTransform = calculateTransform(query,seqCount);
+	struct transform *revTransform = calculateReverseTransform(query,seqCount);
 	struct FMidx *index = calculateInterval(transform,seqCount,revTransform,query.length);
 	intervalToFile(index,seqCount,transform,query,revTransform);
 /*    	deleteSuffixArray(m,seqCount,query.length);

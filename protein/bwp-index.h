@@ -31,6 +31,7 @@ struct FMidx
 
 extern char OUTPUT_FILE[]; 
 
+struct transform *calculateReverseTransform(struct input query, int seqCount);
 struct transform *calculateTransform(struct input query, int seqCount);
 struct suffix *buildSuffixArray(char *sequence,int length);
 int *positions(struct suffix *m, int seqLength);
