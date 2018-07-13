@@ -317,19 +317,33 @@ int getSeqCount(char *fileName)	/*reutrns number of sequences present in a multi
 int *getLength(char *fileName,int seqCount) /*returns an array of sequence lengths*/
 {
 	int i = 0;
+	int count = 0;
         FILE *file = fopen(fileName,"r");
         char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
-        int *seqLength = (int *) malloc(seqCount * sizeof(int));;
+        int *seqLength = (int *) malloc(seqCount * sizeof(int));
         while(fgets(temp,MAX_LINE_LENGTH-1,file) != NULL)
         {
-            	if(temp[0] != '>' && temp[0] != '\n')
-            	{
+		if(temp[0] == '>')
+		{
+			if(count)
+			{
+				seqLength[i] += 1;
+				i++;	
+			}
+		}
+		else if(temp[0] == '\n')
+		{
+			continue;
+		}
+		else
+		{
+			count++;
 			temp[strcspn(temp, "\n")] = 0;
-			temp[strcspn(temp, "\r")] = 0;		
-                	seqLength[i] = strlen(temp)+1;
-	                i++;
-            	}	
+                        temp[strcspn(temp, "\r")] = 0;
+			seqLength[i] += strlen(temp);
+		}
         }
+	seqLength[i] += 1;
         fclose(file);
 	/*free(temp);*/
         return seqLength;
@@ -353,15 +367,31 @@ void readFasta(char *fileName, struct input *query)
 {
     	char *temp = (char *) malloc(query->maxLength * sizeof(char));
 	char *rev = (char *) malloc(query->maxLength * sizeof(char)); 
-    	int i = 0;
+    	int i,seqCount = 0;
 	FILE *file = fopen(fileName,"r");
     	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
     	{
             	if(temp[0] == '>')      /*if line is a header*/
             	{
-                    	strtok(temp,"\n");
-                    	memmove(temp, temp+1, strlen(temp));
-                    	strcpy(query->name[i],temp);
+			if(seqCount == 0)
+			{
+                    		strtok(temp,"\n");
+                    		memmove(temp, temp+1, strlen(temp));
+                    		strcpy(query->name[i],temp);
+			}
+			else
+			{
+				strcpy(query->sequence[i],rev);
+				strcat(query->sequence[i],"$");
+				rev = reverse(rev,strlen(rev));
+				strcat(rev,"$");
+				strcpy(query->reverse[i],rev);
+                        	i++;
+				memset(rev,0,strlen(rev));
+				strtok(temp,"\n");
+                                memmove(temp, temp+1, strlen(temp));
+                                strcpy(query->name[i],temp);
+			}
             	}
             	else if(temp[0] == '\n') /*if line is empty*/
             	{
@@ -369,70 +399,21 @@ void readFasta(char *fileName, struct input *query)
             	}
             	else    /*if line contains an amino acid sequence*/
             	{
+			seqCount++;
                     	strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
-			strcpy(rev,temp);
-			rev = reverse(rev,strlen(rev));
-			strcat(rev,"$");
-                    	strcat(temp,"$");
-                    	strcpy(query->sequence[i],temp);    /*saving string in memory*/
-			strcpy(query->reverse[i],rev);
-                    	i++;
+			strcat(rev,temp);
 			memset(temp,0,strlen(temp));
-			memset(rev,0,strlen(rev));
             	}
     	}
+	strcpy(query->sequence[i],rev);
+	strcat(query->sequence[i],"$");
+	rev = reverse(rev,strlen(rev));
+	strcat(rev,"$");
+	strcpy(query->reverse[i],rev);
 	fflush(file);
 	fclose(file);
 /*	free(temp);
 	free(rev);*/
-}
-
-void formatFasta(char *fileName)
-{
-	int i;
-	int lineCount = getLineCount(fileName);
-	char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
-	char **fileInfo = (char **) malloc(lineCount * sizeof(char *));
-	FILE *file;
-	for(i = 0; i < lineCount; i++)
-	{
-		fileInfo[i] = (char *) malloc(MAX_LINE_LENGTH * sizeof(char)); 
-	}
-	i = 0;
-	file = fopen(fileName,"r");
-	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
-        {
-		temp[strcspn(temp, "\n")] = 0;
-		temp[strcspn(temp, "\r")] = 0;
-		strncpy(fileInfo[i],temp,strlen(temp)); /*Causing segFault*/
-		i++;
-	}
-	fclose(file);
-	fflush(file);
-	file = fopen(fileName,"w+");
-	for(i = 0; i < lineCount; i++)
-	{
-		if(fileInfo[i][0] == '>' && i != 0)
-		{
-			fprintf(file,"\n%s\n",fileInfo[i]);
-		}
-		else if(fileInfo[i][0] == '>' && i == 0)
-		{
-			fprintf(file,"%s\n",fileInfo[i]);
-		}
-		else
-		{
-			fprintf(file,"%s",fileInfo[i]);
-		}
-	}
-	fflush(file);
-	fclose(file);
-	for(i = 0; i < lineCount; i++)
-        {
-		free(fileInfo[i]);
-	}
-	free(temp);
-	free(fileInfo);
 }
 
 int getLineCount(char *fileName)
@@ -711,7 +692,6 @@ void handleF(struct input *query,char *fileName)
     	int seqCount = getSeqCount(fileName);
     	int *seqLength = getLength(fileName,seqCount);
     	*query = initializeInputStruct(seqCount,seqLength);
-/*	formatFasta(fileName);*/
     	readFasta(fileName, query);
 }
 

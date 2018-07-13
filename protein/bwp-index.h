@@ -64,5 +64,4 @@ void Merge(int low,int mid, int high, struct suffix *m,int seqLength);
 int fileExists(char *temp);
 int extensionExists(char *temp);
 int getLineCount(char *fileName);
-void formatFasta(char *fileName);
 #endif
