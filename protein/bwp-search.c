@@ -21,8 +21,6 @@ int MAX_LINE_LENGTH = 100000000;
 char INTERVAL_FILE[] = "index.bwp";
 char OUTPUT_FILE[100];
 int GAP = 11;
-int St = 0;
-int THRESHOLD_SET = 0;
 int EXTENSION = 1;
 int subMat[20][20] = {{4,0,-2,-1,-2,0,-2,-1,-1,-1,-1,-2,-1,-1,-1,1,0,0,-3,-2},{0,9,-3,-4,-2,-3,-3,-1,-3,-1,-1,-3,-3,-3,-3,-1,-1,-1,-2,-2},{-2,-3,6,2,-3,-1,-1,-3,-1,-4,-3,1,-1,0,-2,0,-1,-3,-4,-3},{-1,-4,2,5,-3,-2,0,-3,1,-3,-2,0,-1,2,0,0,-1,-2,-3,-2},{-2,-2,-3,-3,6,-3,-1,0,-3,0,0,-3,-4,-3,-3,-2,-2,-1,1,3},{0,-3,-1,-2,-3,6,-2,-4,-2,-4,-3,0,-2,-2,-2,0,-2,-3,-2,-3},{-2,-3,-1,0,-1,-2,8,-3,-1,-3,-2,1,-2,0,0,-1,-2,-3,-2,2},{-1,-1,-3,-3,0,-4,-3,4,-3,2,1,-3,-3,-3,-3,-2,-1,3,-3,-1},{-1,-3,-1,1,-3,-2,-1,-3,5,-2,-1,0,-1,1,2,0,-1,-2,-3,-2},{-1,-1,-4,-3,0,-4,-3,2,-2,4,2,-3,-3,-2,-2,-2,-1,1,-2,-1},{-1,-1,-3,-2,0,-3,-2,1,-1,2,5,-2,-2,0,-1,-1,-1,1,-1,-1},{-2,-3,1,0,-3,0,1,-3,0,-3,-2,6,-2,0,0,1,0,-3,-4,-2},{-1,-3,-1,-1,-4,-2,-2,-3,-1,-3,-2,-2,7,-1,-2,-1,-1,-2,-4,-3},{-1,-3,0,2,-3,-2,0,-3,1,-2,0,0,-1,5,1,0,-1,-2,-2,-1},{-1,-3,-2,0,-3,-2,0,-3,2,-2,-1,0,-2,1,5,-1,-1,-3,-3,-2},{1,-1,0,0,-2,0,-1,-2,0,-2,-1,1,-1,0,-1,4,1,-2,-3,-2},{0,-1,-1,-1,-2,-2,-2,-1,-1,-1,-1,0,-1,-1,-1,1,5,0,-2,-2},{0,-1,-3,-2,-1,-3,-3,3,-2,1,1,-3,-2,-2,-3,-2,0,4,-3,-1},{-3,-2,-4,-3,1,-2,-2,-3,-3,-2,-1,-4,-4,-2,-3,-3,-2,-3,11,2},{-2,-2,-3,-2,3,-3,2,-1,-2,-1,-1,-2,-3,-1,-2,-2,-2,-1,2,7}};
 
@@ -53,13 +51,12 @@ struct input initializeInputStruct(int seqCount, int *seqLength)
 {
         struct input query;
         int i;
-	int n = 100;
         query.length = (int *) malloc(seqCount * sizeof(int));
         query.name = (char **) malloc(seqCount * sizeof(char *));
         query.sequence = (char **) malloc(seqCount * sizeof(char *));
         for(i = 0; i < seqCount;i++)
         {
-                query.name[i] = (char *) malloc(n*(sizeof(char)));
+                query.name[i] = (char *) malloc(250*(sizeof(char)));
                 query.sequence[i] = (char *) malloc(seqLength[i] * sizeof(char));
         }
         return query;
@@ -222,19 +219,33 @@ char *removePrefix(char *input)
 int *getSeqLength(char *fileName,int seqCount) /*returns an array of sequence lengths*/
 {
 	int i = 0;
+        int count = 0;
         FILE *file = fopen(fileName,"r");
-        char *seq = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
-        int *seqLength = (int *) malloc(seqCount * sizeof(int));;
-        while(fgets(seq,MAX_LINE_LENGTH-1,file) != NULL)
+        char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
+        int *seqLength = (int *) malloc(seqCount * sizeof(int));
+        while(fgets(temp,MAX_LINE_LENGTH-1,file) != NULL)
         {
-            	if(seq[0] != '>' && seq[0] != '\n')
-            	{
-            	    	seqLength[i] = strlen(seq);
-            	    	i++;
-            	}
+                if(temp[0] == '>')
+                {
+                        if(count)
+                        {
+                                i++;    
+                        }
+                }
+                else if(temp[0] == '\n')
+                {
+                        continue;
+                }
+                else
+                {
+                        count++;
+                        temp[strcspn(temp, "\n")] = 0;
+                        temp[strcspn(temp, "\r")] = 0;
+                        seqLength[i] += strlen(temp);
+                }
         }
         fclose(file);
-        free(seq);
+        /*free(temp);*/
         return seqLength;
 }
 
@@ -271,7 +282,7 @@ int *getLength(int seqCount)
 }
 
 /*  
-	read_fasta
+	readFasta
 
       	stores FASTA file information into memory
 
@@ -280,35 +291,53 @@ int *getLength(int seqCount)
 	query: array of structures to contain input sequence information
 	
 */
-void read_fasta(char *fileName, struct input *query)
+
+
+void readFasta(char *fileName, struct input *query)
 {
-    	char *temp = (char *) malloc(MAX_LINE_LENGTH+1 * sizeof(char));
-    	/*m = newArr(seqC,seqLength);*/
-    	FILE *file = fopen(fileName,"r");
-    	int i = 0;
-    	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
-    	{
-            	if(temp[0] == '>')      /*if line is a header*/
-            	{
-            		strtok(temp,"\n");
-                    	memmove(temp, temp+1, strlen(temp));
-                    	strcpy(query->name[i],temp);
-            	}
-            	else if(temp[0] == '\n') /*if line is empty*/
-            	{
-            	        continue;
-            	}
-            	else    /*if line contains a nucleotide sequence*/
-            	{
-                	strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
-                    	/*strcat(temp,"$");*/
-                    	strcpy(query->sequence[i],temp);    /*saving string in memory*/
-                    	query->length[i] = strlen(temp);
-                    	i++;
-            	}
-    	}
-    	fclose(file);
-        free(temp);
+	char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
+        char *temp2 = (char *) malloc(MAX_LINE_LENGTH * sizeof(char)); 
+        int i = 0; 
+	int seqCount= 0;
+        FILE *file = fopen(fileName,"r");
+        while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
+        {
+                if(temp[0] == '>')      /*if line is a header*/
+                {
+                        if(seqCount == 0)
+                        {
+                                strtok(temp,"\n");
+                                memmove(temp, temp+1, strlen(temp));
+                                strcpy(query->name[i],temp);
+                        }
+                        else
+                        {
+				query->length[i] = strlen(temp2);
+                                strcpy(query->sequence[i],temp2);
+                                i++;
+                                memset(temp2,0,strlen(temp2));
+                                strtok(temp,"\n");
+                                memmove(temp, temp+1, strlen(temp));
+                                strcpy(query->name[i],temp);
+                        }
+                }
+                else if(temp[0] == '\n') /*if line is empty*/
+                {
+                        continue;
+                }
+                else    /*if line contains an amino acid sequence*/
+                {
+                        seqCount++;
+                        strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
+                        strcat(temp2,temp);
+                        memset(temp,0,strlen(temp));
+                }
+        }
+        strcpy(query->sequence[i],temp2);
+        fflush(file);
+        fclose(file);
+/*      free(temp);
+        free(temp2);*/  
 }
 
 
@@ -593,14 +622,14 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
                 exit(0);
         }
 	opterr = 0;
-        while ((c = getopt (argc, argv, "OvShf:s:M:o:d:i:t:a:m:")) != -1) /*options must be added here to be recognized, options followed by : take in a parameter*/
+        while ((c = getopt (argc, argv, "OvShf:s:M:o:d:i:a:m:")) != -1) /*options must be added here to be recognized, options followed by : take in a parameter*/
         {
                 switch (c)
                 {
                         case 'h':
                                 printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-search <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta file as a query\n-s\t\tFor input of a string as a query\n-h\t\tFor this usage statement\n-S\t\tTo suppress all output to screen\n-M\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n");
 				printf ("-d\t\tTo designate the number of allowed mismatches\n-i\t\tTo specify a custom index file\n-v\t\tTo supply output to screen\n-a [1,2]\tTo designate search algorithm (default: scored)\n   1\tDistance\n   2\tConserved Distance\n");
-				printf("-t\t\tTo specify score threshold\n-O\t\tTo display matches not meeting the score threshold\n-m [1,2,3,4]\tTo designate scoring matrix (default: blosum62)\n   1\tblosum90\n   2\tpam30\n   3\tpam60\n   4\tpam250\n\n");
+				printf("-O\t\tTo display matches not meeting the score threshold\n-m [1,2,3,4]\tTo designate scoring matrix (default: blosum62)\n   1\tblosum90\n   2\tpam30\n   3\tpam60\n   4\tpam250\n\n");
                                 exit(0);
 
                         case 'f':
@@ -647,10 +676,6 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
                                 verbose = true;
 				filter = false;
                                 break;
-			case 't' :
-				St = atoi(optarg);
-				THRESHOLD_SET = 1;
-				break;
                         case 'd' :
                                 MAX_MISMATCHES = atoi(optarg);
                                 break;
@@ -720,7 +745,7 @@ void handleF(struct input *query,char *fileName)
         int seqCount = getSeqCount(fileName);
         int *seqLength = getSeqLength(fileName,seqCount);
         *query = initializeInputStruct(seqCount,seqLength);
-        read_fasta(fileName, query);
+        readFasta(fileName, query);
 }
 
 /*
@@ -768,14 +793,13 @@ struct FMidx *getIndex(void)
 			continue;
 		}
 		else if(temp[0] == 'n')
-		{
-			
+		{	
 			continue;
 		}
 		else if(temp[0] == 'd')
 		{
 			removePrefix(temp);
-			tempIndex[i].desc = (char *) malloc(strlen(temp)*sizeof(char));
+			tempIndex[i].desc = (char *) malloc(250*sizeof(char));
 			strcpy(tempIndex[i].desc,temp);
 		}
 		else if(temp[0] == 'l')
@@ -785,8 +809,8 @@ struct FMidx *getIndex(void)
 		else if(temp[0] == 'q')
 		{
 			removePrefix(temp);
-			tempIndex[i].sequence = (char *) malloc(strlen(temp)*sizeof(char));
-			strcpy(tempIndex[i].sequence,temp);
+			tempIndex[i].sequence = (char *) malloc(tempIndex[i].length*sizeof(char));
+			strncpy(tempIndex[i].sequence,temp,tempIndex[i].length);
 		}
 		else if(temp[0] == 's')
                 {
@@ -803,14 +827,14 @@ struct FMidx *getIndex(void)
 		else if(temp[0] == 't')
                 {
                         removePrefix(temp);
-			tempIndex[i].transform = (char *) malloc(strlen(temp)*sizeof(char));
-			strcpy(tempIndex[i].transform,temp);
+			tempIndex[i].transform = (char *) malloc(tempIndex[i].length*sizeof(char));
+			strncpy(tempIndex[i].transform,temp,tempIndex[i].length);
                 }
 		else if(temp[0] == 'f')
                 {
                         removePrefix(temp);
-                        tempIndex[i].reverse = (char *) malloc(strlen(temp)*sizeof(char));
-                        strcpy(tempIndex[i].reverse,temp);
+                        tempIndex[i].reverse = (char *) malloc(tempIndex[i].length*sizeof(char));
+                        strncpy(tempIndex[i].reverse,temp,tempIndex[i].length);
                 }
 		else if(temp[0] == 'c')
                 {
@@ -856,6 +880,7 @@ struct FMidx *getIndex(void)
                                 i++;
                         }
                 }
+		memset(temp,0,strlen(temp));
 	}
 	fclose(file);
 	return tempIndex;
@@ -877,7 +902,7 @@ void filterMatches(struct matches **headRef, struct FMidx input)
 	int oLength,s1,s2,e1,e2,length;
 	float overlap;
 	struct matches *node = *headRef;
-	printf("Filtering!\n");
+/*	printf("Filtering!\n");*/
 	if(node != NULL)
 	{
 		s1 = input.SA[node->low];
@@ -931,7 +956,7 @@ void filterMatches(struct matches **headRef, struct FMidx input)
 		}
 		node = node->next;
 	}
-	printf("Filtered!\n");
+/*	printf("Filtered!\n");*/
 	return;
 }
 
@@ -1014,7 +1039,7 @@ struct output **exactSearch(struct input query,int qsc,struct FMidx *index,int i
 	return temp;
 }
 
-int ***calculateS(struct FMidx *index,int isc, struct input query,int qsc)
+int ***calculateS(struct FMidx *index,int isc, struct input query,int qsc, int *St)
 {
         int i,j,z;
         int ***score = (int ***) malloc(qsc*sizeof(int **));
@@ -1052,13 +1077,13 @@ int ***calculateS(struct FMidx *index,int isc, struct input query,int qsc)
                                 score[i][z][j] = s;
                         }
                 }
+               	St[i] = roundFloat(0.9 * s);
+		if(verbose) 
+		{		
+			printf("Thresh:\t%d\nScore:\t%d\n",St[i],s);
+		}
 
         }
-	if(!THRESHOLD_SET) /* will need to be changed for handling multiple queries */
-	{
-		St = roundFloat(0.9 * s);
-	}
-	printf("Thresh:\t%d\nScore:\t%d\n",St,s);
         return score;
 }
 
@@ -1214,7 +1239,8 @@ struct results **conservedSearch(struct input query,int qsc,struct FMidx *index,
 	return temp;
 }
 
-struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int isc,int ***S)
+
+struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int isc,int ***S,int *St)
 {
         int i,j;
         struct results **temp = (struct results **) malloc(qsc*sizeof(struct results *));
@@ -1226,14 +1252,14 @@ struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int
                 {
                         temp[i][j].match = NULL;
                         traceBack = (char *) malloc(sizeof(char) * (MAX_MISMATCHES+query.length[i]));
-                        temp[i][j].match = scoredRecur(index[j],S[i][j],query.sequence[i],query.length[i]-1,1,index[j].length-1,0,1,traceBack,0);
+                        temp[i][j].match = scoredRecur(index[j],S[i][j],query.sequence[i],query.length[i]-1,1,index[j].length-1,0,1,traceBack,0,St[i]);
                         temp[i][j].match = sortMatches(temp[i][j].match,index[j]);
                 }
         }
         return temp;
 }
 
-struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, int high,int Se,int pState,char *traceBack,int tbIdx)
+struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, int high,int Se,int pState,char *traceBack,int tbIdx, int St)
 {
         int j;
         char *tempTB = (char *) malloc(sizeof(char)*tbIdx);
@@ -1269,7 +1295,7 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
                 if(St > (Sp[i] + score)){ return NULL;}
         }
         tempTB[tbIdx] = 'X';
-        match = scoredRecur(index,Sp,W,i-1,low,high,getScore(0,0,score,tempP,2),2,tempTB,tbIdx+1); /*GAP in index seq*/
+        match = scoredRecur(index,Sp,W,i-1,low,high,getScore(0,0,score,tempP,2),2,tempTB,tbIdx+1,St); /*GAP in index seq*/
         if(match != NULL){ results = getUnion(match,results);}
         match = NULL;
         tempP = pState;
@@ -1285,7 +1311,7 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
                 if(k <= l)
                 {
                         tempTB[tbIdx] = 'Y';
-                        match = scoredRecur(index,Sp,W,i,k,l,getScore(j,baseMap(W[i]),score,tempP,3),3,tempTB,tbIdx+1); /*GAP in query*/
+                        match = scoredRecur(index,Sp,W,i,k,l,getScore(j,baseMap(W[i]),score,tempP,3),3,tempTB,tbIdx+1,St); /*GAP in query*/
                         if(match != NULL){results = getUnion(match,results);}
                         match = NULL;
                         tempP = pState;
@@ -1293,7 +1319,7 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
                         if(revBaseMap(j) == W[i]) /*match*/
                         {
                                 tempTB[tbIdx] = 'M';
-                                match = scoredRecur(index,Sp,W,i-1,k,l,getScore(j,baseMap(W[i]),score,tempP,1),1,tempTB,tbIdx+1);
+                                match = scoredRecur(index,Sp,W,i-1,k,l,getScore(j,baseMap(W[i]),score,tempP,1),1,tempTB,tbIdx+1,St);
                                 if(match != NULL){ results = getUnion(match,results);}
                                 match = NULL;
                                 tempP = pState;
@@ -1304,11 +1330,11 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
                                 tempTB[tbIdx] = 'U';
                                 if(subMat[j][baseMap(W[i])] > 0)
                                 {
-                                        match = scoredRecur(index,Sp,W,i-1,k,l,getScore(j,baseMap(W[i]),score,tempP,1),1,tempTB,tbIdx+1);
+                                        match = scoredRecur(index,Sp,W,i-1,k,l,getScore(j,baseMap(W[i]),score,tempP,1),1,tempTB,tbIdx+1,St);
                                 }
                                 else
                                 {
-                                        match = scoredRecur(index,Sp,W,i-1,k,l,getScore(j,baseMap(W[i]),score,tempP,1),1,tempTB,tbIdx+1);
+                                        match = scoredRecur(index,Sp,W,i-1,k,l,getScore(j,baseMap(W[i]),score,tempP,1),1,tempTB,tbIdx+1,St);
                                 }
                                 if(match != NULL){ results = getUnion(match,results);}
                                 match = NULL;
@@ -1517,9 +1543,12 @@ void outputToFile(struct results **out, int qsc, int isc,struct FMidx *index,str
                         {
                                 while(temp != NULL)
                                 {
-					fprintf(f,"%s\t",index[j].desc);
-                                        fprintf(f,"%d\t%d\t%s\t%d\n",index[j].SA[temp->low],query.length[i]+index[j].SA[temp->low]-1,query.name[i],temp->score);
-                                        temp = temp->next;
+					if(temp->keep != 0 || showAll)                                                                                                              
+                                        {
+						fprintf(f,"%s\t",index[j].desc);
+        	                                fprintf(f,"%d\t%d\t%s\t%d\n",index[j].SA[temp->low],query.length[i]+index[j].SA[temp->low]-1,query.name[i],temp->score);
+					}
+        	                        temp = temp->next;
                                 }
                         }
                 }
@@ -1812,13 +1841,13 @@ int main(int argc, char *argv[])
 	int IseqCount = 0;
 	int ***D;
 	int ***S; 
+	int *St;
         struct results **out;
 	struct input query = manageInputs(argv,argc,&QseqCount);
         struct FMidx *index = getIndex();
 	IseqCount = getCount();
 
 	if(subMatType){readSubMat(subMatType);}
-
 
 	/*Search*/
 	if(searchType > 0)
@@ -1835,8 +1864,9 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		S = calculateS(index,IseqCount,query,QseqCount);
-		out = scoredSearch(query,QseqCount,index,IseqCount,S);
+		St = (int *) malloc(QseqCount*sizeof(int));
+		S = calculateS(index,IseqCount,query,QseqCount,St);
+		out = scoredSearch(query,QseqCount,index,IseqCount,S,St);
 	}
 	/*Output*/
 	outputToFile(out,QseqCount,IseqCount,index,query);
