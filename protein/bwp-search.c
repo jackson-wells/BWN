@@ -313,7 +313,7 @@ void readFasta(char *fileName, struct input *query)
                         else
                         {
 				query->length[i] = strlen(temp2);
-                                strcpy(query->sequence[i],temp2);
+                                strncpy(query->sequence[i],temp2,query->length[i]);
                                 i++;
                                 memset(temp2,0,strlen(temp2));
                                 strtok(temp,"\n");
@@ -333,7 +333,8 @@ void readFasta(char *fileName, struct input *query)
                         memset(temp,0,strlen(temp));
                 }
         }
-        strcpy(query->sequence[i],temp2);
+	query->length[i] = strlen(temp2);
+        strncpy(query->sequence[i],temp2,query->length[i]);
         fflush(file);
         fclose(file);
 /*      free(temp);
@@ -1243,6 +1244,7 @@ struct results **conservedSearch(struct input query,int qsc,struct FMidx *index,
 struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int isc,int ***S,int *St)
 {
         int i,j;
+	printf("HERE7.1\nq:%d\ni:%d\n",qsc,isc);
         struct results **temp = (struct results **) malloc(qsc*sizeof(struct results *));
         char *traceBack;
         for(i = 0; i < qsc; i++)
@@ -1250,12 +1252,17 @@ struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int
                 temp[i] = (struct results *) malloc(isc*sizeof(struct results));
                 for(j = 0; j < isc; j++)
                 {
+			printf("HERE7.2\ni:%d\nj:%d\n",i,j);
                         temp[i][j].match = NULL;
                         traceBack = (char *) malloc(sizeof(char) * (MAX_MISMATCHES+query.length[i]));
+			printf("HERE7.3\n");
                         temp[i][j].match = scoredRecur(index[j],S[i][j],query.sequence[i],query.length[i]-1,1,index[j].length-1,0,1,traceBack,0,St[i]);
+			printf("HERE7.4\n");
                         temp[i][j].match = sortMatches(temp[i][j].match,index[j]);
+			printf("HERE7.5\n");
                 }
         }
+	printf("HERE7.6\n");
         return temp;
 }
 
@@ -1269,6 +1276,7 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
         struct matches *results = NULL;
         strcpy(tempTB,traceBack);
         match->next = NULL;
+	printf("HERE7.31\n");
         if(i < 0)
         {
                 if(St > score)
@@ -1294,30 +1302,37 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
         {
                 if(St > (Sp[i] + score)){ return NULL;}
         }
+	printf("HERE7.32\n");
         tempTB[tbIdx] = 'X';
         match = scoredRecur(index,Sp,W,i-1,low,high,getScore(0,0,score,tempP,2),2,tempTB,tbIdx+1,St); /*GAP in index seq*/
+	printf("HERE7.33\n");
         if(match != NULL){ results = getUnion(match,results);}
         match = NULL;
         tempP = pState;
         score = Se;
+	printf("HERE7.34\n");
         for(j = 0; j < 20; j++)
         {
                 int k = index.C[j] + index.O[j][low-1] + 1;
                 int l = index.C[j] + index.O[j][high];
+		printf("HERE7.35\n");
                 if(index.transform[0] == revBaseMap(j) && low == 1 && (high == index.length-1))
                 {
                         k = k - 1;
                 }
                 if(k <= l)
                 {
+			printf("HERE7.36\n");
                         tempTB[tbIdx] = 'Y';
                         match = scoredRecur(index,Sp,W,i,k,l,getScore(j,baseMap(W[i]),score,tempP,3),3,tempTB,tbIdx+1,St); /*GAP in query*/
+			printf("HERE7.37\n");
                         if(match != NULL){results = getUnion(match,results);}
                         match = NULL;
                         tempP = pState;
                         score = Se;
                         if(revBaseMap(j) == W[i]) /*match*/
                         {
+				printf("HERE7.8\n");
                                 tempTB[tbIdx] = 'M';
                                 match = scoredRecur(index,Sp,W,i-1,k,l,getScore(j,baseMap(W[i]),score,tempP,1),1,tempTB,tbIdx+1,St);
                                 if(match != NULL){ results = getUnion(match,results);}
@@ -1327,6 +1342,7 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
                         }
                         else /*mismatch*/
                         {
+				printf("HERE7.9\n");
                                 tempTB[tbIdx] = 'U';
                                 if(subMat[j][baseMap(W[i])] > 0)
                                 {
@@ -1843,10 +1859,13 @@ int main(int argc, char *argv[])
 	int ***S; 
 	int *St;
         struct results **out;
+	printf("HERE1\n");
 	struct input query = manageInputs(argv,argc,&QseqCount);
+	printf("HERE2\n");
         struct FMidx *index = getIndex();
+	printf("HERE3\n");
 	IseqCount = getCount();
-
+	printf("HERE4\n");
 	if(subMatType){readSubMat(subMatType);}
 
 	/*Search*/
@@ -1864,12 +1883,17 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
+		printf("HERE5\n");
 		St = (int *) malloc(QseqCount*sizeof(int));
+		printf("HERE6\n");
 		S = calculateS(index,IseqCount,query,QseqCount,St);
+		printf("HERE7\n");
 		out = scoredSearch(query,QseqCount,index,IseqCount,S,St);
+		printf("HERE8\n");
 	}
 	/*Output*/
 	outputToFile(out,QseqCount,IseqCount,index,query);
+	printf("HERE9\n");
 	if(verbose)
 	{
 		printKLs(out,QseqCount,IseqCount);
