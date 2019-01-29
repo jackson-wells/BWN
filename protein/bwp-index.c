@@ -661,15 +661,15 @@ void handleS(struct input *query, char *sequence)
 	char *rev;
 	int seqCount = 1;
 	int *seqLength = (int *) malloc(sizeof(int));
-	seqLength[0] = strlen(sequence) + 1;
+	seqLength[0] = strlen(sequence);
+	*query = initializeInputStruct(seqCount,seqLength);
+	printf("\nHere is the string you entered:\n%s\n\n",sequence);
+	strcpy(query->sequence[0],sequence);
+        strcat(query->sequence[0],"$");
 	rev = reverse(sequence,seqLength[0]);
-    	printf("\nHere is the string you entered:\n%s\n\n",sequence);
-	strcat(rev,"$");
-    	strcat(sequence,"$");
-    	*query = initializeInputStruct(seqCount,seqLength);
-    	query->length[0] = seqLength[0];
 	strcpy(query->reverse[0],rev);
-    	strcpy(query->sequence[0],sequence);
+	strcat(query->reverse[0],"$");
+    	query->length[0] = seqLength[0] +1;
     	strcpy(query->name[0],"Command-line Input");
 }
 
