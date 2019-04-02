@@ -43,7 +43,7 @@ int subMat[20][20] = {{4,0,-2,-1,-2,0,-2,-1,-1,-1,-1,-2,-1,-1,-1,1,0,0,-3,-2},{0
         seqLength: an array of integers containing the lengths of each sequence
                 in the input file
 
-	returns: a structure variable prepared to contain information from the
+>	returns: a structure variable prepared to contain information from the
 		input file
  
 */
@@ -1040,20 +1040,30 @@ struct output **exactSearch(struct input query,int qsc,struct FMidx *index,int i
 	return temp;
 }
 
-int ***calculateS(struct FMidx *index,int isc, struct input query,int qsc, int *St)
+int *calculateT(int qsc, struct input query) 
 {
-        int i,j,z;
+	int i,j;
+	int *tempThresh = (int *) malloc(qsc*sizeof(int));
+	for(i = 0; i < qsc; i++) {
+		tempThresh[i] = 0;
+		for(j = 0; j < query.length[i]; j++) {
+			 tempThresh[i] += subMat[baseMap(query.sequence[i][j])][baseMap(query.sequence[i][j])];
+		}
+		tempThresh[i] = roundFloat(0.9 * tempThresh[i]);
+	}
+	return tempThresh;
+}
+
+int ***calculateS(struct FMidx *index,int isc, struct input query,int qsc)
+{
+        int i,j,z,k,l,high,low,s;
         int ***score = (int ***) malloc(qsc*sizeof(int **));
-        int low = 1;
-        int s = 0;
-        int high;
-        int k,l;
         for(i = 0; i < qsc; i++)
         {
                 score[i] = (int **) malloc(isc*sizeof(int *));
                 for(z = 0; z < isc; z++)
                 {
-                        score[i][z] = (int *) malloc(query.length[i]*sizeof(int));
+                        score[i][z] = (int *) calloc(query.length[i],sizeof(int));
                         low = 1;
                         high = index[z].length - 1;
                         s = 0;
@@ -1067,23 +1077,27 @@ int ***calculateS(struct FMidx *index,int isc, struct input query,int qsc, int *
                                 }
                                 if(k <= l)
                                 {
-					s = score[i][z][j-1] + subMat[baseMap(query.sequence[i][j])][baseMap(query.sequence[i][j])];
+					if(j < 1) { 
+						s = score[i][z][0] + subMat[baseMap(query.sequence[i][j])][baseMap(query.sequence[i][j])];
+					}
+					else {
+						s = score[i][z][j-1] + subMat[baseMap(query.sequence[i][j])][baseMap(query.sequence[i][j])];
+					}
 				}
 				else
 				{
-                                        low = 1;
+					low = 1;
                                         high = index[z].length - 1;
-                                        s = score[i][z][j-1] - GAP;
+					if(j < 1) {
+						s = score[i][z][0] - GAP;
+					}
+					else {
+                                        	s = score[i][z][j-1] - GAP;
+					}
                                 }
                                 score[i][z][j] = s;
                         }
                 }
-               	St[i] = roundFloat(0.9 * s);
-		if(verbose) 
-		{		
-/*			printf("Thresh:\t%d\nScore:\t%d\n",St[i],s);*/
-		}
-
         }
         return score;
 }
@@ -1244,7 +1258,6 @@ struct results **conservedSearch(struct input query,int qsc,struct FMidx *index,
 struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int isc,int ***S,int *St)
 {
         int i,j;
-	printf("HERE7.1\nq:%d\ni:%d\n",qsc,isc);
         struct results **temp = (struct results **) malloc(qsc*sizeof(struct results *));
         char *traceBack;
         for(i = 0; i < qsc; i++)
@@ -1252,24 +1265,12 @@ struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int
                 temp[i] = (struct results *) malloc(isc*sizeof(struct results));
                 for(j = 0; j < isc; j++)
                 {
-			printf("HERE7.2\ni:%d\nj:%d\n",i,j);
                         temp[i][j].match = NULL;
                         traceBack = (char *) malloc(sizeof(char) * (query.length[i]));
-			printf("HERE7.3\n");
-/*			int temp2;
-			
-                        for(temp2 = 0; temp2 < query.length[i]; temp2++)
-                        {
-                                printf("%d,",S[i][j][temp2]);
-                        }
-                        exit(0);*/
                         temp[i][j].match = scoredRecur(index[j],S[i][j],query.sequence[i],query.length[i]-1,1,index[j].length-1,0,1,traceBack,0,St[i]);
-			printf("HERE7.4\n");
                         temp[i][j].match = sortMatches(temp[i][j].match,index[j]);
-			printf("HERE7.5\n");
                 }
         }
-	printf("HERE7.6\n");
         return temp;
 }
 
@@ -1283,17 +1284,14 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
         struct matches *results = NULL;
         strcpy(tempTB,traceBack);
         match->next = NULL;
-/*	printf("St:%d\nscore:%d\ni:%d\nSp:%d\n\n",St,score,i,Sp[i]);*/
         if(i < 0)
         {
                 if(St > score)
 		{ 
-			printf("ST > Score\nSt:%d\nscore:%d\ni:%d\nSp:%d\n\n",St,score,i,Sp[i]);
 			return NULL;
 		}
 		else
 		{
-			printf("Match Found!\n");
 			match->low = low;
 	                match->high = high;
 	                match->score = Se;
@@ -1308,10 +1306,9 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
         }
         else
         {
-                if(St > (Sp[i] + score + 10)){ 
-			printf("St > Sp & Score\nSt:%d\nscore:%d\ni:%d\nSp:%d\n\n",St,score,i,Sp[i]);
+                if(St > (Sp[i] + score)){ 
 			return NULL;
-		}		/*added "+ 10" to tighten parameters */
+		}
         }
         tempTB[tbIdx] = 'X';
         match = scoredRecur(index,Sp,W,i-1,low,high,getScore(0,0,score,tempP,2),2,tempTB,tbIdx+1,St); /*GAP in index seq*/
@@ -1669,6 +1666,7 @@ void outputToFile(struct results **out, int qsc, int isc,struct FMidx *index,str
 	query:
 
 */ 
+
 void printInResults(struct results **out,int qsc,int isc,struct FMidx *index, struct input query)
 {
 	int i,j,z;
@@ -1844,13 +1842,9 @@ int main(int argc, char *argv[])
 	int ***S; 
 	int *St;
         struct results **out;
-	printf("HERE1\n");
 	struct input query = manageInputs(argv,argc,&QseqCount);
-	printf("HERE2\n");
         struct FMidx *index = getIndex();
-	printf("HERE3\n");
 	IseqCount = getCount();
-	printf("HERE4\n");
 	if(subMatType){readSubMat(subMatType);}
 
 	/*Search*/
@@ -1868,22 +1862,17 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		printf("HERE5\n");
-		St = (int *) malloc(QseqCount*sizeof(int));
-		printf("HERE6\n");
-		S = calculateS(index,IseqCount,query,QseqCount,St);
-		printf("HERE7\n");
+		St = calculateT(QseqCount,query);
+		S = calculateS(index,IseqCount,query,QseqCount);
 		out = scoredSearch(query,QseqCount,index,IseqCount,S,St);
-		printf("HERE8\n");
 	}
 	/*Output*/
 	outputToFile(out,QseqCount,IseqCount,index,query);
-	printf("HERE9\n");
 	if(verbose)
 	{
 		printKLs(out,QseqCount,IseqCount);
 	}
-	if(!silent)
+	if(silent)
 	{
 		printInResults(out,QseqCount,IseqCount,index,query);
 	}
