@@ -366,8 +366,10 @@ int *getLength(char *fileName,int seqCount) /*returns an array of sequence lengt
 void readFasta(char *fileName, struct input *query)
 {
     	char *temp = (char *) malloc(query->maxLength * sizeof(char));
+	char *temp2 = (char *) malloc(query->maxLength * sizeof(char));
 	char *rev = (char *) malloc(query->maxLength * sizeof(char)); 
-    	int i,seqCount = 0;
+    	int i = 0;
+	int seqCount = 0;
 	FILE *file = fopen(fileName,"r");
     	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
     	{
@@ -381,13 +383,14 @@ void readFasta(char *fileName, struct input *query)
 			}
 			else
 			{
-				strcpy(query->sequence[i],rev);
+				strcpy(query->sequence[i],temp2);
 				strcat(query->sequence[i],"$");
-				rev = reverse(rev,strlen(rev));
+				rev = reverse(temp2,strlen(temp2));
 				strcat(rev,"$");
 				strcpy(query->reverse[i],rev);
                         	i++;
 				memset(rev,0,strlen(rev));
+				memset(temp2,0,strlen(temp2));
 				strtok(temp,"\n");
                                 memmove(temp, temp+1, strlen(temp));
                                 strcpy(query->name[i],temp);
@@ -401,19 +404,20 @@ void readFasta(char *fileName, struct input *query)
             	{
 			seqCount++;
                     	strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
-			strcat(rev,temp);
+			strcat(temp2,temp);
 			memset(temp,0,strlen(temp));
             	}
     	}
-	strcpy(query->sequence[i],rev);
+	strcpy(query->sequence[i],temp2);
 	strcat(query->sequence[i],"$");
-	rev = reverse(rev,strlen(rev));
+	rev = reverse(temp2,strlen(temp2));
 	strcat(rev,"$");
 	strcpy(query->reverse[i],rev);
+	memset(rev,0,strlen(rev));
+        memset(temp2,0,strlen(temp2));
+	memset(temp,0,strlen(temp));
 	fflush(file);
 	fclose(file);
-/*	free(temp);
-	free(rev);*/
 }
 
 int getLineCount(char *fileName)
@@ -596,7 +600,9 @@ struct input manageInputs(int argc, char *argv[],int *seqCount)
 	            	case 'f':
 				if(fileExists(optarg))
                                 {
+					printf("HERE1\n");
 		                	handleF(&query,optarg);
+					printf("HERE30\n");
 		                	*seqCount = getSeqCount(optarg);
 				}
 				else
@@ -692,7 +698,9 @@ void handleF(struct input *query,char *fileName)
     	int seqCount = getSeqCount(fileName);
     	int *seqLength = getLength(fileName,seqCount);
     	*query = initializeInputStruct(seqCount,seqLength);
+	printf("Here2\n");
     	readFasta(fileName, query);
+	printf("HERE25\n");
 }
 
 
@@ -1180,6 +1188,7 @@ int main(int argc, char *argv[])
 {
 	int seqCount = 0;	/*will contain # of sequences, is written by manageInputs()*/
 	struct input query = manageInputs(argc,argv,&seqCount);
+	printf("HERE\n");
 	struct transform *transform = calculateTransform(query,seqCount);	
 	struct transform *revTransform = calculateReverseTransform(query,seqCount);
 	struct FMidx *index = calculateInterval(transform,seqCount,revTransform,query.length);
