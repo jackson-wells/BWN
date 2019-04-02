@@ -600,9 +600,7 @@ struct input manageInputs(int argc, char *argv[],int *seqCount)
 	            	case 'f':
 				if(fileExists(optarg))
                                 {
-					printf("HERE1\n");
 		                	handleF(&query,optarg);
-					printf("HERE30\n");
 		                	*seqCount = getSeqCount(optarg);
 				}
 				else
@@ -698,9 +696,7 @@ void handleF(struct input *query,char *fileName)
     	int seqCount = getSeqCount(fileName);
     	int *seqLength = getLength(fileName,seqCount);
     	*query = initializeInputStruct(seqCount,seqLength);
-	printf("Here2\n");
     	readFasta(fileName, query);
-	printf("HERE25\n");
 }
 
 
@@ -1188,7 +1184,6 @@ int main(int argc, char *argv[])
 {
 	int seqCount = 0;	/*will contain # of sequences, is written by manageInputs()*/
 	struct input query = manageInputs(argc,argv,&seqCount);
-	printf("HERE\n");
 	struct transform *transform = calculateTransform(query,seqCount);	
 	struct transform *revTransform = calculateReverseTransform(query,seqCount);
 	struct FMidx *index = calculateInterval(transform,seqCount,revTransform,query.length);
