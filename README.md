@@ -3,13 +3,12 @@
 ## Current Version:
  - Index and search protein or nucleotide sequences
  - Index a single or multi-fasta file, or a string input
- - Search index for input sequences, using string, single or multi-fasta
+ - Search index using string, single or multi-fasta
 
 ## Additions To Come:
- - Memory Clearage
- - BaseMap() using binary
- - E-values of alignments
+ - BaseMap() using hashtable
  - Induced sorting of SA for calculation in "linear" time
+ - Support for multiple scoring matrices
 
 ### To Compile:
  1. Clone this repository to your local machine.
