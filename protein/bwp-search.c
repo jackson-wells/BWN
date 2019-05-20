@@ -10,6 +10,9 @@
 #include <sys/syscall.h>
 #include "bwp-search.h"
 
+float SCORE_CUTOFF = 0.9;
+bool EVALUE_BASED_THRESHOLD = true; 
+double expectThresh = 1E-8;
 int subMatType = 0;
 int searchType = 0;
 bool showAll = false;
@@ -65,6 +68,23 @@ struct input initializeInputStruct(int seqCount, int *seqLength)
 /* 				*
  * 	HELPER FUNCTIONS 	*
  * 				*/
+
+int **calculateExpect(struct FMidx *index,int isc, struct input query,int qsc)
+{
+	double lambda = 0.271046;
+	double K = 0.0471811;
+	int i,j;
+	int **sThresh = (int **) malloc(qsc * sizeof(int *));
+	for(i = 0; i < qsc; i++) 
+	{
+		sThresh[i] = (int *) malloc(isc * sizeof(int));
+		for(j = 0; j < isc; j++)
+		{
+			sThresh[i][j] = roundFloat((-1/lambda)*log(expectThresh/(K*index[j].length*query.length[i])));
+		}
+	}
+	return sThresh;
+}
 
 int min(int a, int b)
 {
@@ -623,13 +643,13 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
                 exit(0);
         }
 	opterr = 0;
-        while ((c = getopt (argc, argv, "OvShf:s:M:o:d:i:a:m:")) != -1) /*options must be added here to be recognized, options followed by : take in a parameter*/
+        while ((c = getopt (argc, argv, "OvShf:s:M:o:d:i:a:m:c:e:")) != -1) /*options must be added here to be recognized, options followed by : take in a parameter*/
         {
                 switch (c)
                 {
                         case 'h':
                                 printf("\nBurrows Wheeler Protein Aligner\n\nUsage: \"bwp-search <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta file as a query\n-s\t\tFor input of a string as a query\n-h\t\tFor this usage statement\n-S\t\tTo suppress all output to screen\n-M\t\tTo designate maximum sequence length according to character count\n-o\t\tSpecify output file name (exclude file extentions)\n");
-				printf ("-d\t\tTo designate the number of allowed mismatches\n-i\t\tTo specify a custom index file\n-v\t\tTo supply output to screen\n-a [1,2]\tTo designate search algorithm (default: scored)\n   1\tDistance\n   2\tConserved Distance\n");
+				printf ("-e\t\tTo designate Evalue cutoff e.g. -e 1E-10\n-c\t\tTo designate a score based cutoff e.g. -c 0.9 (scored searches only)\n-d\t\tTo designate the number of allowed mismatches\n-i\t\tTo specify a custom index file\n-v\t\tTo supply output to screen\n-a [1,2]\tTo designate search algorithm (default: scored)\n   1\tDistance\n   2\tConserved Distance\n");
 				printf("-O\t\tTo display matches not meeting the score threshold\n-m [1,2,3,4]\tTo designate scoring matrix (default: blosum62)\n   1\tblosum90\n   2\tpam30\n   3\tpam60\n   4\tpam250\n\n");
                                 exit(0);
 
@@ -691,6 +711,13 @@ struct input manageInputs(char *argv[], int argc, int *seqCount)
                                         exit(0);
                                 }
                                 break;
+			case 'c' :
+				EVALUE_BASED_THRESHOLD = false;
+				SCORE_CUTOFF = atof(optarg);
+				break;
+			case 'e' :
+				expectThresh = atof(optarg);
+				break; 
 			case 'O' :
 				showAll = true;
 				break;
@@ -1049,7 +1076,7 @@ int *calculateT(int qsc, struct input query)
 		for(j = 0; j < query.length[i]; j++) {
 			 tempThresh[i] += subMat[baseMap(query.sequence[i][j])][baseMap(query.sequence[i][j])];
 		}
-		tempThresh[i] = roundFloat(0.9 * tempThresh[i]);
+		tempThresh[i] = roundFloat(SCORE_CUTOFF * tempThresh[i]);
 	}
 	return tempThresh;
 }
@@ -1255,11 +1282,23 @@ struct results **conservedSearch(struct input query,int qsc,struct FMidx *index,
 }
 
 
-struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int isc,int ***S,int *St)
+struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int isc,int ***S)
 {
         int i,j;
-        struct results **temp = (struct results **) malloc(qsc*sizeof(struct results *));
+	int *sThresh90;
+	int **sThreshE;
+	struct results **temp = (struct results **) malloc(qsc*sizeof(struct results *));
         char *traceBack;
+
+	if(EVALUE_BASED_THRESHOLD)
+        {
+		sThreshE = calculateExpect(index, isc, query, qsc);
+	}
+	else
+	{
+		sThresh90 = calculateT(qsc,query);
+	}
+
         for(i = 0; i < qsc; i++)
         {
                 temp[i] = (struct results *) malloc(isc*sizeof(struct results));
@@ -1267,26 +1306,33 @@ struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int
                 {
                         temp[i][j].match = NULL;
                         traceBack = (char *) malloc(sizeof(char) * (query.length[i]));
-                        temp[i][j].match = scoredRecur(index[j],S[i][j],query.sequence[i],query.length[i]-1,1,index[j].length-1,0,1,traceBack,0,St[i]);
+			if(EVALUE_BASED_THRESHOLD) 
+			{
+				temp[i][j].match = scoredRecur(index[j],S[i][j],query.sequence[i],query.length[i]-1,1,index[j].length-1,0,1,traceBack,0,sThreshE[i][j]);
+			}
+			else
+			{
+                        	temp[i][j].match = scoredRecur(index[j],S[i][j],query.sequence[i],query.length[i]-1,1,index[j].length-1,0,1,traceBack,0,sThresh90[i]);
+			}
                         temp[i][j].match = sortMatches(temp[i][j].match,index[j]);
                 }
         }
         return temp;
 }
 
-struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, int high,int Se,int pState,char *traceBack,int tbIdx, int St)
+struct matches *scoredRecur(struct FMidx index,int *sPre,char *W,int i,int low, int high,int sPostIn,int pState,char *traceBack,int tbIdx, int sThresh)
 {
         int j;
         char *tempTB = (char *) malloc(sizeof(char)*tbIdx);
         int tempP = pState;
-        int score = Se;
+        int sPost = sPostIn;
         struct matches *match = (struct matches *) malloc(sizeof(struct matches));
         struct matches *results = NULL;
         strcpy(tempTB,traceBack);
         match->next = NULL;
         if(i < 0)
         {
-                if(St > score)
+                if(sPost < sThresh)
 		{ 
 			return NULL;
 		}
@@ -1294,7 +1340,7 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
 		{
 			match->low = low;
 	                match->high = high;
-	                match->score = Se;
+	                match->score = sPostIn;
 	                match->tb = (char *) malloc(sizeof(char) * tbIdx);
 	                strncpy(match->tb,tempTB,tbIdx);
 	                strcpy(match->tb,reverse(match->tb));
@@ -1306,16 +1352,16 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
         }
         else
         {
-                if(St > (Sp[i] + score)){ 
+                if((sPre[i] + sPost) < sThresh){ 
 			return NULL;
 		}
         }
         tempTB[tbIdx] = 'X';
-        match = scoredRecur(index,Sp,W,i-1,low,high,getScore(0,0,score,tempP,2),2,tempTB,tbIdx+1,St); /*GAP in index seq*/
+        match = scoredRecur(index,sPre,W,i-1,low,high,getScore(0,0,sPost,tempP,2),2,tempTB,tbIdx+1,sThresh); /*GAP in index seq*/
         if(match != NULL){ results = getUnion(match,results);}
         match = NULL;
         tempP = pState;
-        score = Se;
+        sPost = sPostIn;
         for(j = 0; j < 20; j++)
         {
                 int k = index.C[j] + index.O[j][low-1] + 1;
@@ -1327,18 +1373,18 @@ struct matches *scoredRecur(struct FMidx index,int *Sp,char *W,int i,int low, in
                 if(k <= l)
                 {
                         tempTB[tbIdx] = 'Y';
-                        match = scoredRecur(index,Sp,W,i,k,l,getScore(j,baseMap(W[i]),score,tempP,3),3,tempTB,tbIdx+1,St); /*GAP in query*/
+                        match = scoredRecur(index,sPre,W,i,k,l,getScore(j,baseMap(W[i]),sPost,tempP,3),3,tempTB,tbIdx+1,sThresh); /*GAP in query*/
                         if(match != NULL){results = getUnion(match,results);}
                         match = NULL;
                         tempP = pState;
-                        score = Se;
+                        sPost = sPostIn;
                         if(revBaseMap(j) == W[i]){tempTB[tbIdx] = 'M';} /*match*/
                         else{tempTB[tbIdx] = 'U';} /*mismatch*/
-                        match = scoredRecur(index,Sp,W,i-1,k,l,getScore(j,baseMap(W[i]),score,tempP,1),1,tempTB,tbIdx+1,St);
+                        match = scoredRecur(index,sPre,W,i-1,k,l,getScore(j,baseMap(W[i]),sPost,tempP,1),1,tempTB,tbIdx+1,sThresh);
                         if(match != NULL){ results = getUnion(match,results);}
                         match = NULL;
                         tempP = pState;
-                        score = Se;
+                        sPost = sPostIn;
                 }
         }
         return results;
@@ -1840,7 +1886,6 @@ int main(int argc, char *argv[])
 	int IseqCount = 0;
 	int ***D;
 	int ***S; 
-	int *St;
         struct results **out;
 	struct input query = manageInputs(argv,argc,&QseqCount);
         struct FMidx *index = getIndex();
@@ -1862,9 +1907,8 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		St = calculateT(QseqCount,query);
 		S = calculateS(index,IseqCount,query,QseqCount);
-		out = scoredSearch(query,QseqCount,index,IseqCount,S,St);
+		out = scoredSearch(query,QseqCount,index,IseqCount,S);
 	}
 	/*Output*/
 	outputToFile(out,QseqCount,IseqCount,index,query);

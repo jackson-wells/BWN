@@ -84,12 +84,14 @@ void mergeSortMatches(struct matches** headRef);
 struct matches *sortMatches(struct matches *match, struct FMidx input);
 char *reverse(char *str);
 char *getSequenceAlignment(int i,int j,struct FMidx *index, struct input query,struct matches *match);
-int ***calculateS(struct FMidx *index,int isc, struct input query,int qsc, int *St);
-struct matches *scoredRecur(struct FMidx index, int *Sp,char *W,int i, int low, int high,int score,int pState,char *traceBack,int tbIdx,int St);
-struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int isc,int ***S,int *St);
+int *calculateT(int qsc, struct input query);
+int ***calculateS(struct FMidx *index,int isc, struct input query,int qsc);
+struct matches *scoredRecur(struct FMidx index, int *Sp,char *W,int i, int low, int high,int score,int pState,char *traceBack,int tbIdx,int sThresh);
+struct results **scoredSearch(struct input query,int qsc,struct FMidx *index,int isc,int ***S);
 void filterMatches(struct matches **head,struct FMidx input);
 int roundFloat(float num);
 void readSubMat(int selection);
 int min(int a, int b);
+int **calculateExpect(struct FMidx *index,int isc,struct input query,int qsc);
 
 #endif
