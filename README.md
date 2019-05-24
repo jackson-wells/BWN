@@ -6,7 +6,6 @@
  - Search index using string, single or multi-fasta
 
 ## Additions To Come:
- - BaseMap() using hashtable
  - Induced sorting of SA for calculation in "linear" time
  - Support for multiple scoring matrices
 
