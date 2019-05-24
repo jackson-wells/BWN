@@ -386,49 +386,6 @@ reverse(char *str)
 	return tStr;
 }
 
-/*
- 
-	revBaseMap
-
-	handles input of integers that corressponds to a character 
-	from the amino acid alphabet
-
-        temp: integer  variable containing a value that corresponds to
-		a character from the amino acid alphabet
-
-	returns: character corresponding to the supplied integer
-
-*/
-char 
-revBaseMap(int temp)
-{
-        if(temp == 0) return 'A';
-        else if(temp == 1) return 'C';
-        else if(temp == 2) return 'D';
-        else if(temp == 3) return 'E';
-	else if(temp == 4) return 'F';
-        else if(temp == 5) return 'G';
-        else if(temp == 6) return 'H';
-	else if(temp == 7) return 'I';
-        else if(temp == 8) return 'K';
-        else if(temp == 9) return 'L';
-	else if(temp == 10) return 'M';
-        else if(temp == 11) return 'N';
-        else if(temp == 12) return 'P';
-	else if(temp == 13) return 'Q';
-        else if(temp == 14) return 'R';
-        else if(temp == 15) return 'S';
-	else if(temp == 16) return 'T';
-        else if(temp == 17) return 'V';
-        else if(temp == 18) return 'W';
-	else if(temp == 19) return 'Y';
-	else
-        {
-                printf("Invalid integer '%d'\n",temp);
-                exit(1);
-        }
-}
-
 int 
 indexHashCode(int key) 
 {
@@ -487,54 +444,6 @@ insertIndex(int key,char data)
 		hashIndex %= HASH_SIZE;
 	}
 	indexArray[hashIndex] = item;
-}
-
-
-
-/*
- 
-	baseMap
-
-	handles input of characters from the amino acid alphabet
-
-        temp: character variable containing a capitol letter from
-                the amino acid alphabet
-
-	returns: 
-		if in alphabet: corresponding integer for the input character
-
-                if not in alphabet: error message containing the invalid
-                character and exits with status 1
-
-*/
-int 
-baseMap(char temp)
-{
-	if(temp == 'A') return 0;
-        else if(temp == 'C') return 1;
-        else if(temp == 'D') return 2;
-        else if(temp == 'E') return 3;
-        else if(temp == 'F') return 4;
-        else if(temp == 'G') return 5;
-        else if(temp == 'H') return 6;
-        else if(temp == 'I') return 7;
-        else if(temp == 'K') return 8;
-        else if(temp == 'L') return 9;
-        else if(temp == 'M') return 10;
-        else if(temp == 'N') return 11;
-        else if(temp == 'P') return 12;
-        else if(temp == 'Q') return 13;
-        else if(temp == 'R') return 14;
-        else if(temp == 'S') return 15;
-        else if(temp == 'T') return 16;
-        else if(temp == 'V') return 17;
-        else if(temp == 'W') return 18;
-        else if(temp == 'Y') return 19;
-	else
-        {
-                printf("Invalid character '%c'\n",temp);
-                exit(1);
-        }
 }
 
 unsigned 

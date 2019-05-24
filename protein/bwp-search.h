@@ -33,6 +33,18 @@ struct matches
 	int keep;
 };
 
+struct baseToIndex 
+{
+        char key;
+        int data;
+};
+
+struct indexToBase 
+{
+   	char data;
+   	int key;
+};
+
 struct output /* artifact of exact search */
 {
 	int low;
@@ -48,13 +60,20 @@ struct results
 
 extern char INTERVAL_FILE[];
 
+unsigned baseHashCode(char key);
+int baseSearch(char key);
+void insertBase(char key, int data);
+void createBaseHash(void);
+int indexHashCode(int key);
+void createIndexHash(void);
+char indexSearch(int key);
+void insertIndex(int key,char data);
 void getHighScore(struct matches *head, int k, int l, int score,char *traceback,int traceLength);
 int getScore(int l1, int l2,int score,int p,int c);
 struct matches *getUnion(struct matches *head1, struct matches *head2);
 void push(struct matches** head_ref, int k,int l,int score,char *traceBack,int traceLength, int keep);
 int isPresent(struct matches *head, int k, int l);
 int *getLength(int seqCount);
-int baseMap(char temp);
 void outputToFile(struct results **out, int qsc, int isc,struct FMidx *index,struct input query);
 struct output **exactSearch(struct input query,int qsc,struct FMidx *index,int isc);
 void readFasta(char *fileName, struct input *query);
@@ -72,7 +91,6 @@ struct results **conservedSearch(struct input query,int QseqCount,struct FMidx *
 struct matches *conservedRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high,int score,int pState,char *traceBack,int tbIdx);
 struct results **distanceSearch(struct input query,int QseqCount,struct FMidx *index,int IseqCount,int ***D);
 struct matches *distanceRecur(struct FMidx index, int *D,char *W,int i,int d, int low, int high,int score,int pState,char *traceBack,int tbIdx);
-char revBaseMap(int temp);
 void printInResults(struct results **out,int qsc,int isc,struct FMidx *index, struct input query);
 struct matches *pointToTail(struct matches *match);
 struct matches *append(struct matches *match, struct matches *results);
