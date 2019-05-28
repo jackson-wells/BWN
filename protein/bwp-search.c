@@ -21,6 +21,7 @@ int subMatType = 0;
 int searchType = 0;
 bool showAll = false;
 bool silent = false;
+bool outputFile = false;
 bool verbose = false;
 bool filter = true;
 int MAX_MISMATCHES = 0;
@@ -582,20 +583,20 @@ frontbacksplit(struct matches* source, struct matches** frontRef, struct matches
     	else
     	{
         	slow = source;
-        	fast = source -> next;
-        	while (fast != NULL)
+        	fast = source->next;
+        	while(fast != NULL)
         	{
-            		fast = fast -> next;
-            		if (fast != NULL)
+            		fast = fast->next;
+            		if(fast != NULL)
             		{
-                		slow = slow -> next;
-                		fast = fast -> next;
+                		slow = slow->next;
+                		fast = fast->next;
             		}
         	}
     	}
     	*frontRef = source;
-    	*backRef = slow -> next;
-    	slow -> next = NULL;
+    	*backRef = slow->next;
+    	slow->next = NULL;
 }
 
 /*
@@ -723,6 +724,7 @@ manageInputs(char *argv[], int argc, int *seqCount)
                                 MAX_LINE_LENGTH = atoi(optarg);
                                 break;
                         case 'o' :
+				outputFile = true;
                                 strcpy(OUTPUT_FILE,optarg);
                                 break;
                         case 'v' :
@@ -1078,6 +1080,9 @@ calculateS(struct FMidx *index,int isc, struct input query,int qsc)
 				}
 				else
 				{
+/*					if(i == 0 && j == 0) {
+						printf("ADDINGG GAP PENALTY TO EXACT MATCH\n");
+					}*/
 					low = 1;
                                         high = index[z].length - 1;
 					if(j < 1)
@@ -1397,6 +1402,11 @@ scoredRecur(struct FMidx index,int *sPre,char *W,int i,int low, int high,
         int sPost = sPostIn;
         struct matches *match = (struct matches *) malloc(sizeof(struct matches));
         struct matches *results = NULL;
+/*	if(!silent)
+	{
+		printf("sPre[%d]:%d\nsPostIn:%d\n\n",i,sPre[i],sPostIn);
+		printf("tbIDX: %d\ntb: %s\n\n",tbIdx,traceBack);
+	}*/
         strcpy(tempTB,traceBack);
         match->next = NULL;
         if(i < 0)
@@ -1415,10 +1425,13 @@ scoredRecur(struct FMidx index,int *sPre,char *W,int i,int low, int high,
 			match->keep = 1;
 			return match;
 		}
-
         }
         else
 	{
+		if(sPost < 0)
+			return NULL;
+		if(tbIdx > (int) strlen(W))
+			return NULL;
                 if((sPre[i] + sPost) < sThresh) 
 			return NULL;
 	}
@@ -1713,10 +1726,10 @@ printInResults(struct results **out,int qsc,int isc,struct FMidx *index, struct 
 		{
 			temp = (struct matches *) malloc(sizeof(struct matches));
 			temp = out[i][j].match; /*causing seg fault*/
-			printf("\nindex: %s\nquery: %s\n\n-----------------------------------------------\n\n",index[j].desc,query.name[i]);
-			if(temp!=NULL)
+			if(temp != NULL)
 			{
-				while(temp!=NULL)
+				 printf("\nindex: %s\n\nquery: %s\n\n-----------------------------------------------\n\n",index[j].desc,query.name[i]);
+				while(temp != NULL)
 				{
 					if(temp->keep != 0 || showAll)
 					{
@@ -1790,15 +1803,15 @@ printInResults(struct results **out,int qsc,int isc,struct FMidx *index, struct 
 							}
 	                                        }
 	
-						printf("\n\nStart: %d\nEnd: %d\n\n-----------------------------------------------\n\n\n\n",index[j].SA[temp->low],index[j].SA[temp->low]+temp->traceLength-1);
+						printf("\n\nStart: %d\nEnd: %d\n\n-----------------------------------------------\n\n",index[j].SA[temp->low],index[j].SA[temp->low]+temp->traceLength-1);
 						temp = temp->next;
 					}
 					else
 						temp = temp->next;
 				}
 			}
-			else
-				printf("No Matches Found\n\n-----------------------------------------------\n\n\n\n");
+			/*else
+				printf("No Matches Found\n\n-----------------------------------------------\n\n\n\n");*/
 		}
 	}	
 }
@@ -1876,10 +1889,11 @@ main(int argc, char *argv[])
 	}
 
 	/*Output*/
-	outputToFile(out,QseqCount,IseqCount,index,query);
+	if(outputFile)
+		outputToFile(out,QseqCount,IseqCount,index,query);
 	if(verbose)
 		printKLs(out,QseqCount,IseqCount);
-	if(silent)
+	if(!silent)
 		printInResults(out,QseqCount,IseqCount,index,query);
 	return 0;
 }
