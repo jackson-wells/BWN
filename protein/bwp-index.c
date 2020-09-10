@@ -97,11 +97,11 @@ initializeSuffixArray(struct suffix *m,int seqLength)
 {
 	int j;
 	for(j = 0; j < seqLength; j++)
-        {
-                m[j].string = (char *) malloc(seqLength * sizeof(char));
-    	        m[j].pos = j+1;
-                assert(m[j].string != 0);
-        }
+	{
+		m[j].string = (char *) malloc(seqLength * sizeof(char));
+		m[j].pos = j+1;
+		/*assert(m[j].string != "");*/
+	}
 }
 
 /*
@@ -125,23 +125,25 @@ struct input
 initializeInputStruct( int seqCount, int *seqLength)
 {
 	struct input query;
-    	int i;
-    	int n = 250; /*allowed header length*/
+	int i;
+	int n = 250; /*allowed header length*/
 	query.maxLength = 0;
-    	query.length = (int *) malloc(seqCount * sizeof(int));
-    	query.name = (char **) malloc(seqCount * sizeof(char *));
+	query.length = (int *) malloc(seqCount * sizeof(int));
+	query.name = (char **) malloc(seqCount * sizeof(char *));
 	query.sequence = (char **) malloc(seqCount * sizeof(char *));
 	query.reverse = (char **) malloc(seqCount * sizeof(char *));
 	for(i = 0; i < seqCount;i++)
 	{
+		printf("sl:%d\n",seqLength[i]);
 		query.length[i] = seqLength[i];
+		printf("ql:%d\n",query.length[i]);
 		if(seqLength[i] > query.maxLength)
 			query.maxLength = seqLength[i];
 		query.name[i] = (char *) malloc(n*(sizeof(char)));
-	        query.sequence[i] = (char *) malloc(seqLength[i] * sizeof(char));
+		query.sequence[i] = (char *) malloc(seqLength[i] * sizeof(char));
 		query.reverse[i] = (char *) malloc(seqLength[i] * sizeof(char));
 	}
-    	return query;
+	return query;
 }
 
 
@@ -195,7 +197,7 @@ deleteSuffixArray(struct suffix **m,int seqCount,int *seqLength)
 	freeSuffixArray(m,seqCount,seqLength);
 	for(i = 0; i< seqCount; i++)
 	{
-	/*	free(m[i]);*/
+		/*	free(m[i]);*/
 	}
 }
 
@@ -260,11 +262,11 @@ fileExists(char *temp)
         FILE *file = fopen(temp, "r");
         if (file)
         {
-                fclose(file);
-                return 1;
+			fclose(file);
+			return 1;
         }
         else
-                return 0;
+			return 0;
 }
 
 /*  
@@ -314,16 +316,18 @@ getLength(char *fileName,int seqCount) /*returns an array of sequence lengths*/
 {
 	int i = 0;
 	int count = 0;
-        FILE *file = fopen(fileName,"r");
-        char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
-        int *seqLength = (int *) malloc(seqCount * sizeof(int));
-        while(fgets(temp,MAX_LINE_LENGTH-1,file) != NULL)
-        {
+	int tempLength = 0;
+	FILE *file = fopen(fileName,"r");
+	char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
+	int *seqLength = (int *) malloc(seqCount * sizeof(int));
+	while(fgets(temp,MAX_LINE_LENGTH-1,file) != NULL)
+	{
 		if(temp[0] == '>')
 		{
 			if(count)
 			{
-				seqLength[i] += 1;
+				seqLength[i] = tempLength + 1;			
+				tempLength = 0;
 				i++;	
 			}
 		}
@@ -333,14 +337,14 @@ getLength(char *fileName,int seqCount) /*returns an array of sequence lengths*/
 		{
 			count++;
 			temp[strcspn(temp, "\n")] = 0;
-                        temp[strcspn(temp, "\r")] = 0;
-			seqLength[i] += strlen(temp);
+			temp[strcspn(temp, "\r")] = 0;
+			tempLength += strlen(temp);			
 		}
-        }
-	seqLength[i] += 1;
-        fclose(file);
+	}
+	seqLength[i] = tempLength + 1;
+	fclose(file);
 	/*free(temp);*/
-        return seqLength;
+	return seqLength;
 }
 
 
@@ -360,57 +364,99 @@ getLength(char *fileName,int seqCount) /*returns an array of sequence lengths*/
 void 
 readFasta(char *fileName, struct input *query)
 {
-    	char *temp = (char *) malloc(query->maxLength * sizeof(char));
+	char *temp = (char *) malloc(query->maxLength * sizeof(char));
 	char *temp2 = (char *) malloc(query->maxLength * sizeof(char));
 	char *rev = (char *) malloc(query->maxLength * sizeof(char)); 
-    	int i = 0;
+	int i = 0;
 	int seqCount = 0;
+	temp2[0] = '\0';
+	printf("t2:%s\nt:%s\n",temp2,temp);
+	printf("C\nmL:%d\n",query->maxLength);
 	FILE *file = fopen(fileName,"r");
-    	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
-    	{
-            	if(temp[0] == '>')      /*if line is a header*/
-            	{
+	while(fgets(temp,query->maxLength,file) != NULL)   /*loops through each line of a file*/
+	{
+		printf("D\n");
+		printf("t2:%s\nt:%s\n",temp2,temp);
+		if(temp[0] == '>')      /*if line is a header*/
+		{
 			if(seqCount == 0)
 			{
-                    		strtok(temp,"\n");
-                    		memmove(temp, temp+1, strlen(temp));
-                    		strcpy(query->name[i],temp);
+				strtok(temp,"\n");
+				printf("E\n");
+				printf("t2:%s\nt:%s\n",temp2,temp);
+				memmove(temp, temp+1, strlen(temp));
+				printf("F\n");
+				printf("t2:%s\nt:%s\n",temp2,temp);
+				strcpy(query->name[i],temp);
+				printf("G\n%s\n",query->name[i]);
+				printf("t2:%s\nt:%s\n",temp2,temp);
 			}
 			else
 			{
+				printf("H\n");
+				printf("cL1:%d\n",strlen(query->sequence[i]));
 				strcpy(query->sequence[i],temp2);
+				printf("cL2:%d\n",strlen(query->sequence[i]));
+				printf("s:%s\n",query->sequence[i]);
+				printf("qL:%d\nLC: \"%c\"\n",query->length[i], query->sequence[i][query->length[i]]);
+				/*
+					Check 
+						-	length memory is declared with
+
+							65262
+
+						-	length store in structure
+
+							465465
+
+				*/
 				strcat(query->sequence[i],"$");
+				printf("cL3:%d\n",strlen(query->sequence[i]));
 				rev = reverse(temp2,strlen(temp2));
 				strcat(rev,"$");
 				strcpy(query->reverse[i],rev);
-                        	i++;
+				i++;
 				memset(rev,0,strlen(rev));
 				memset(temp2,0,strlen(temp2));
 				strtok(temp,"\n");
-                                memmove(temp, temp+1, strlen(temp));
-                                strcpy(query->name[i],temp);
+				memmove(temp, temp+1, strlen(temp));
+				strcpy(query->name[i],temp);
 			}
-            	}
-            	else if(temp[0] == '\n') /*if line is empty*/
-                	continue;
-            	else    /*if line contains an amino acid sequence*/
-            	{
+		}
+		else if(temp[0] == '\n') /*if line is empty*/
+			continue;
+		else    /*if line contains an amino acid sequence*/
+		{
+			printf("D2\n");
 			seqCount++;
-                    	strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
+			strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
+			printf("D3\nt2:%s\nt:%s\n",temp2,temp);
 			strcat(temp2,temp);
+			printf("D4\n");
 			memset(temp,0,strlen(temp));
-            	}
-    	}
+			printf("D5\n");
+		}
+	}
+	printf("i:%d\nqL:%d\nt:%s\nq:%s\n",i,query->length[i],temp2,query->sequence[i]);
+	
 	strcpy(query->sequence[i],temp2);
+	printf("HELLO111\n");
 	strcat(query->sequence[i],"$");
+	printf("HELLO\n");
 	rev = reverse(temp2,strlen(temp2));
+	printf("HELLO1\n");
 	strcat(rev,"$");
+	printf("HELLO2\n");
 	strcpy(query->reverse[i],rev);
+	printf("HELLO3\n");
 	memset(rev,0,strlen(rev));
-        memset(temp2,0,strlen(temp2));
+	memset(temp2,0,strlen(temp2));
 	memset(temp,0,strlen(temp));
+	printf("HELLO\n");
 	fflush(file);
-	fclose(file);
+	fclose(file);	
+	printf("HELLO\n");
+	printf("%s\n%s\n%s\n%s\n%s\n%s\n",query->name[0],query->sequence[0],query->name[1],query->sequence[1],query->name[2],query->sequence[2]);
 }
 
 int 
@@ -418,8 +464,8 @@ getLineCount(char *fileName)
 {
 	char *temp = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
 	int lineCount = 0;
-        FILE *file = fopen(fileName,"r");
-        while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
+	FILE *file = fopen(fileName,"r");
+	while(fgets(temp,MAX_LINE_LENGTH,file) != NULL)   /*loops through each line of a file*/
 		lineCount++;
 	fclose(file);
 	return lineCount;
@@ -439,12 +485,12 @@ getLineCount(char *fileName)
 void 
 charToEnd(char* input,int len)
 {
-    	if(len > 1)
-    	{
-        	const char first = input[0];
-        	memmove(input,input+1,len-1); 
-        	input[len -1] = first;
-    	}
+	if(len > 1)
+	{
+		const char first = input[0];
+		memmove(input,input+1,len-1); 
+		input[len -1] = first;
+	}
 }
 
 /*	
@@ -463,15 +509,15 @@ char *
 reverse(char *str, int length)
 {
 	char *p1, *p2;
-      	if (! str || ! *str)
-            return str;
-      	for (p1 = str, p2 = str + length - 1; p2 > p1; ++p1, --p2)
-      	{
-            	*p1 ^= *p2;
-            	*p2 ^= *p1;
-            	*p1 ^= *p2;
-      	}
-      	return str;
+	if (! str || ! *str)
+		return str;
+	for (p1 = str, p2 = str + length - 1; p2 > p1; ++p1, --p2)
+	{
+		*p1 ^= *p2;
+		*p2 ^= *p1;
+		*p1 ^= *p2;
+	}
+	return str;
 }
 
 /*
@@ -492,13 +538,13 @@ reverse(char *str, int length)
 int 
 extensionExists(char *temp)
 {
-        int i = 0;
-        for(i = 0; i < (int)(strlen(temp)-1); i++)
-        {
-                if(temp[i] == '.')
-                        return 0;
-        }
-        return 1;
+	int i = 0;
+	for(i = 0; i < (int)(strlen(temp)-1); i++)
+	{
+		if(temp[i] == '.')
+			return 0;
+	}
+	return 1;
 }
 
 
@@ -521,31 +567,31 @@ extensionExists(char *temp)
 int 
 baseMap(char temp)
 {
-        if(temp == 'A')	return 0;
-        else if(temp == 'C') return 1;
-        else if(temp == 'D') return 2;
-        else if(temp == 'E') return 3;
-        else if(temp == 'F') return 4;
-        else if(temp == 'G') return 5;
-        else if(temp == 'H') return 6;
-        else if(temp == 'I') return 7;
-        else if(temp == 'K') return 8;
-        else if(temp == 'L') return 9;
-        else if(temp == 'M') return 10;
-        else if(temp == 'N') return 11;
-        else if(temp == 'P') return 12;
-        else if(temp == 'Q') return 13;
-        else if(temp == 'R') return 14;
-        else if(temp == 'S') return 15;
-        else if(temp == 'T') return 16;
-        else if(temp == 'V') return 17;
-        else if(temp == 'W') return 18;
-        else if(temp == 'Y') return 19;
-        else
-        {
-                printf("Invalid character '%c'\n",temp);
-                exit(1);
-        }
+	if(temp == 'A')	return 0;
+	else if(temp == 'C') return 1;
+	else if(temp == 'D') return 2;
+	else if(temp == 'E') return 3;
+	else if(temp == 'F') return 4;
+	else if(temp == 'G') return 5;
+	else if(temp == 'H') return 6;
+	else if(temp == 'I') return 7;
+	else if(temp == 'K') return 8;
+	else if(temp == 'L') return 9;
+	else if(temp == 'M') return 10;
+	else if(temp == 'N') return 11;
+	else if(temp == 'P') return 12;
+	else if(temp == 'Q') return 13;
+	else if(temp == 'R') return 14;
+	else if(temp == 'S') return 15;
+	else if(temp == 'T') return 16;
+	else if(temp == 'V') return 17;
+	else if(temp == 'W') return 18;
+	else if(temp == 'Y') return 19;
+	else
+	{
+		printf("Invalid character '%c'\n",temp);
+		exit(1);
+	}
 }
 
 /* 					*
@@ -585,45 +631,44 @@ manageInputs(int argc, char *argv[],int *seqCount)
     	{	
 	        switch (c)
 	        {
-	            	case 'h':
-	                	printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-index <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta fileas a query\n-s\t\tFor input of a string as a query\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tTo designate the output file name\n-v\t\tTo produce verbose output\n\n");
-	                	exit(0);
-	
-	            	case 'f':
-				if(fileExists(optarg))
-                                {
-		                	handleF(&query,optarg);
-		                	*seqCount = getSeqCount(optarg);
-				}
-				else
-				{
-                                        printf("%s is not a valid file, exiting\n",optarg);
+				case 'h':
+					printf("\nBurrows Wheeler Nucleotide Alligner\n\nUsage: \"bwp-index <options>\"\n\nOptions:\n\n-f\t\tFor input of a fasta fileas a query\n-s\t\tFor input of a string as a query\n-h\t\tFor this usage statement\n-m\t\tTo designate maximum sequence length according to character count\n-o\t\tTo designate the output file name\n-v\t\tTo produce verbose output\n\n");
 					exit(0);
-                                }
-		                break;
-	
-		        case 's' :
-		                handleS(&query,optarg);
-		                *seqCount = 1;
-		                break;
-			case 'v' :
-                                verbose = true;
-                                break;
-	
-   		        case '?' :
-	                	if(optopt == 's' 
-				   || optopt == 'f' 
-				   || optopt == 'm' 
-				   || optopt == 'o')
-	                		fprintf(stderr, "Option -%c requires an argument.\n\nuse -h for usage statement\n", optopt);
-	                	else if(isprint (optopt))
-	                	    	fprintf(stderr, "Unknown option `-%c'.\n\nuse -h for usage statement\n", optopt);
-	                	exit(0);
-			case 'm' :
-				MAX_LINE_LENGTH = atoi(optarg);
-			case 'o' :
-				strcpy(OUTPUT_FILE,optarg);
-				
+
+				case 'f':
+					if(fileExists(optarg))
+					{						
+						*seqCount = handleFileInput(&query,optarg);						
+					}
+					else
+					{
+						printf("%s is not a valid file, exiting\n",optarg);
+						exit(0);
+					}
+					break;
+
+				case 's' :
+					*seqCount = handleSequenceInput(&query,optarg);					
+					break;
+
+				case 'v' :
+					verbose = true;
+					break;
+
+				case '?' :
+						if(optopt == 's' || optopt == 'f' || optopt == 'm' || optopt == 'o')
+							fprintf(stderr, "Option -%c requires an argument.\n\nuse -h for usage statement\n", optopt);
+						else if(isprint (optopt))
+							fprintf(stderr, "Unknown option `-%c'.\n\nuse -h for usage statement\n", optopt);
+						exit(0);
+
+				case 'm' :
+					MAX_LINE_LENGTH = atoi(optarg);
+					break;
+
+				case 'o' :
+					strcpy(OUTPUT_FILE,optarg);
+					break;
         	}
     	}
 	if(optind < argc)
@@ -647,8 +692,8 @@ manageInputs(int argc, char *argv[],int *seqCount)
 
 
 */
-void 
-handleS(struct input *query, char *sequence)
+int 
+handleSequenceInput(struct input *query, char *sequence)
 {
 	char *rev;
 	int seqCount = 1;
@@ -657,18 +702,19 @@ handleS(struct input *query, char *sequence)
 	*query = initializeInputStruct(seqCount,seqLength);
 	printf("\nHere is the string you entered:\n%s\n\n",sequence);
 	strcpy(query->sequence[0],sequence);
-        strcat(query->sequence[0],"$");
+	strcat(query->sequence[0],"$");
 	rev = reverse(sequence,seqLength[0]);
 	strcpy(query->reverse[0],rev);
 	strcat(query->reverse[0],"$");
-    	query->length[0] = seqLength[0] +1;
-    	strcpy(query->name[0],"Command-line Input");
+	query->length[0] = seqLength[0] +1;
+	strcpy(query->name[0],"Command-line Input");
+	return 1;
 }
 
 
 /*
  
-	handleF
+	handleFileInput
 
 	handles sequence information supplied via files
 
@@ -679,13 +725,17 @@ handleS(struct input *query, char *sequence)
 
 
 */
-void 
-handleF(struct input *query,char *fileName)
+int
+handleFileInput(struct input *query,char *fileName)
 {
-    	int seqCount = getSeqCount(fileName);
-    	int *seqLength = getLength(fileName,seqCount);
-    	*query = initializeInputStruct(seqCount,seqLength);
-    	readFasta(fileName, query);
+	int seqCount = getSeqCount(fileName);
+	int *seqLength = getLength(fileName,seqCount);
+	printf("L:%d\n",seqLength[0]);
+	*query = initializeInputStruct(seqCount,seqLength);
+	printf("A\n");
+	readFasta(fileName, query);
+	printf("B\n");
+	return seqCount;
 }
 
 
@@ -713,6 +763,7 @@ newSuffixArray(int seqLength)
 {
         struct suffix *m = (struct suffix *) malloc(seqLength * sizeof(struct suffix));
         assert(m != 0);
+		printf("hi\n");
         initializeSuffixArray(m,seqLength);
         return m;
 }
@@ -732,8 +783,11 @@ newSuffixArray(int seqLength)
 struct suffix *
 buildSuffixArray(char *sequence,int length)
 {
+		printf("L:%d\n",length);
     	struct suffix *SA = populateSuffixArray(sequence,length);
+		printf("HereAA\n");
     	mergeSort(0,length-1,SA, length);
+		printf("HereAB\n");
     	return SA;
 }
 
@@ -753,19 +807,22 @@ buildSuffixArray(char *sequence,int length)
 struct suffix *
 populateSuffixArray(char *sequence,int length)
 {
+	printf("L:%d\n",length);
 	struct suffix *SA = newSuffixArray(length);
 	int j;
-        for(j = 0; j < length; j++)
-        {
-                SA[j].pos = j + 1;
-               	if(j == 0)
-               		strcpy(SA[j].string,sequence);
-               	if(j > 0)
-               	{
-               	    	charToEnd(sequence,length);
-               	    	strcpy(SA[j].string,sequence);
-               	}
-        }
+	printf("HereAAA\n");
+	for(j = 0; j < length; j++)
+	{		
+		SA[j].pos = j + 1;
+		if(j == 0)
+			strcpy(SA[j].string,sequence);
+		if(j > 0)
+		{
+			charToEnd(sequence,length);
+			strcpy(SA[j].string,sequence);
+		}
+	}
+	printf("HereAAB\n");
 	return SA;
 }
 
@@ -841,28 +898,28 @@ Merge(int low,int mid, int high, struct suffix *m,int seqLength)
 		tempL[i].pos = m[low+i].pos;
 	}
 	for(i = 0; i < nR; i++)
-        {
+	{
 		tempR[i].string = malloc(seqLength * sizeof(char));
-                strncpy(tempR[i].string,m[mid+i+1].string,seqLength);
-                tempR[i].pos = m[mid+i+1].pos;
-        }
+		strncpy(tempR[i].string,m[mid+i+1].string,seqLength);
+		tempR[i].pos = m[mid+i+1].pos;
+	}
 	i = 0;
 	while (i < nL && j < nR)
-    	{
+	{
         	if (strcmp(tempL[i].string,tempR[j].string) <= 0)
         	{
-        	    	strncpy(m[k].string,tempL[i].string,seqLength);
-			m[k].pos = tempL[i].pos;
-        	    	i++;
+					strncpy(m[k].string,tempL[i].string,seqLength);
+					m[k].pos = tempL[i].pos;
+					i++;
         	}
         	else
         	{
-			strncpy(m[k].string,tempR[j].string,seqLength);
-                        m[k].pos = tempR[j].pos;
-        	    	j++;
+					strncpy(m[k].string,tempR[j].string,seqLength);
+					m[k].pos = tempR[j].pos;
+					j++;
         	}
         	k++;
-    	}
+	}
 	while(i < nL)
     	{
 		strncpy(m[k].string,tempL[i].string,seqLength);
@@ -944,25 +1001,26 @@ struct FMidx *
 calculateInterval(struct transform *transform, int seqCount, 
 	          struct transform *revTransform, int *seqLength)
 {
-    	struct FMidx *index = (struct FMidx *) malloc(seqCount * sizeof(struct FMidx));
-    	int i,j;
-    	for(i = 0; i < seqCount; i++)
-    	{
+	struct FMidx *index = (struct FMidx *) malloc(seqCount * sizeof(struct FMidx));
+	int i,j;
+	for(i = 0; i < seqCount; i++)
+	{
 		index[i].O = (int **) malloc(20*sizeof(int **));
 		index[i].R = (int **) malloc(20*sizeof(int **));
-        	for(j = 0; j < 20; j++) /*looping thru each char*/
-        	{
+		for(j = 0; j < 20; j++) /*looping thru each char*/
+		{
 			index[i].O[j] = (int *) malloc(seqLength[i]*sizeof(int));
+			index[i].O[j] = calculateO(transform[i].string,j,seqLength[i]);
+
 			index[i].R[j] = (int *) malloc(seqLength[i]*sizeof(int));
-			index[i].R[j] = calculateO(revTransform[i].string,j,seqLength[i]);
-           		index[i].O[j] = calculateO(transform[i].string,j,seqLength[i]);
-			if(j == 0)				
+			index[i].R[j] = calculateO(revTransform[i].string,j,seqLength[i]);			
+			if (j == 0)				
 				index[i].C[j] = 0;
 			else
-            			index[i].C[j] = calculateC(transform[i].string,j,seqLength[i]);
-        	}
-    	}
-    	return index;
+				index[i].C[j] = calculateC(transform[i].string,j,seqLength[i]);
+		}
+	}
+	return index;
 } 
 
 
@@ -987,18 +1045,21 @@ int *
 calculateO(char *sequence,int letterValue,int length)
 {
 	int i;
-        int count = 0;
+	int count = 0;
 	int *value = (int *) malloc(length * sizeof(int)); 
-        for(i = 0; i < length; i++)
-        {
+	printf("s:'%s'\n\n\n",sequence);
+	for(i = 0; i < length; i++)
+	{
 		if(sequence[i] != '$')
-                {
-                	if(baseMap(sequence[i]) == letterValue)
-                	        count++;
+		{
+			printf("%c",sequence[i]);
+			if(baseMap(sequence[i]) == letterValue)
+				count++;
 		}
 		value[i] = count;
-        }
-        return value;
+	}
+	printf("\n");
+	return value;
 }
 
 /*
@@ -1020,17 +1081,17 @@ calculateO(char *sequence,int letterValue,int length)
 int 
 calculateC(char *sequence, int letterValue, int length)
 {
-    	int i;
+	int i;
 	int count = 0;
-        for(i = 0; i < length; i++)
-        {
+	for(i = 0; i < length; i++)
+	{
 		if(sequence[i] != '$')
-        	{	
+		{	
 			if(baseMap(sequence[i]) < letterValue)
-                		count++;
+				count++;
 		}
-        }
-    	return count;
+	}
+	return count;
 }
 
 /* 				*
@@ -1079,33 +1140,33 @@ intervalToFile(struct FMidx *index, int seqCount, struct transform *transform,
 	/*write each instance of M to a file*/
 	if (f == NULL)
 	{
-            	printf("Error opening file!\n");
-        	exit(1);
+		printf("Error opening file!\n");
+		exit(1);
 	}
 	fprintf(f,"n:%d\n\n",seqCount);
 	for(i = 0; i<seqCount;i++)
-        {
+	{
 /*		query.sequence[i] = query.sequence[i]+2;*/
 		fprintf(f,"d:%s\nl:%d\nq:%s\ns:",query.name[i],query.length[i],query.sequence[i]+1);
 		for(q = 0; q < query.length[i]; q++)
 			fprintf(f,"%d ",transform[i].positions[q]);
-                fprintf(f,"\nt:%s\nf:%s\nc:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",transform[i].string,revTransform[i].string,index[i].C[0],index[i].C[1],index[i].C[2],index[i].C[3],index[i].C[4],index[i].C[5],index[i].C[6],index[i].C[7],index[i].C[8],index[i].C[9],index[i].C[10],index[i].C[11],index[i].C[12],index[i].C[13],index[i].C[14],index[i].C[15],index[i].C[16],index[i].C[17],index[i].C[18],index[i].C[19]);
-                for(j= 0; j < 20; j++)
-                {
-			fprintf(f,"o:");
-                        for(z= 0; z < query.length[i]; z++)
-                                fprintf(f,"%d ",index[i].O[j][z]);
-                        fprintf(f,"\n");
-                }
+		fprintf(f,"\nt:%s\nf:%s\nc:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",transform[i].string,revTransform[i].string,index[i].C[0],index[i].C[1],index[i].C[2],index[i].C[3],index[i].C[4],index[i].C[5],index[i].C[6],index[i].C[7],index[i].C[8],index[i].C[9],index[i].C[10],index[i].C[11],index[i].C[12],index[i].C[13],index[i].C[14],index[i].C[15],index[i].C[16],index[i].C[17],index[i].C[18],index[i].C[19]);
 		for(j= 0; j < 20; j++)
-                {
-                        fprintf(f,"r:");
-                        for(z= 0; z < query.length[i]; z++)
-                                fprintf(f,"%d ",index[i].R[j][z]);
-                        fprintf(f,"\n");
-                }
-                fprintf(f,"\n");
-        }
+		{
+			fprintf(f,"o:");
+			for(z= 0; z < query.length[i]; z++)
+				fprintf(f,"%d ",index[i].O[j][z]);
+			fprintf(f,"\n");
+		}
+		for(j= 0; j < 20; j++)
+		{
+			fprintf(f,"r:");
+			for(z= 0; z < query.length[i]; z++)
+				fprintf(f,"%d ",index[i].R[j][z]);
+			fprintf(f,"\n");
+		}
+		fprintf(f,"\n");
+	}
 	fclose(f);
 }
 
@@ -1125,10 +1186,14 @@ calculateTransform(struct input query, int seqCount)
 {
 	int i;
 	struct transform *tempTransform = (struct transform *) malloc(sizeof(struct transform)*seqCount);
+	printf("HereA\n");
 	struct suffix *m;
+	printf("HereB\n");
 	for(i = 0; i < seqCount; i ++)
 	{
+		printf("HereC\nL:%d\n",query.length[i]);
 		m = buildSuffixArray(query.sequence[i],query.length[i]);
+		printf("Here2.%d\n",i);
 		tempTransform[i].string = bwt(m, query.length[i]);
 		tempTransform[i].positions = positions(m, query.length[i]);
 /*		memmove(m,0,query.length[i]);*/
@@ -1153,21 +1218,27 @@ calculateReverseTransform(struct input query, int seqCount)
 }
 
 
-/* 			*
- *  	MAIN FUNCTION 	*
- *  			*/
+/* 							*
+ *  	MAIN FUNCTION 		*
+ *  						*/
 
 
 int 
 main(int argc, char *argv[])
 {
 	int seqCount = 0;	/*will contain # of sequences, is written by manageInputs()*/
+	printf("Here1\n");
 	struct input query = manageInputs(argc,argv,&seqCount);
+	printf("Here2:\n");
 	struct transform *transform = calculateTransform(query,seqCount);	
+	printf("Here3\n");
 	struct transform *revTransform = calculateReverseTransform(query,seqCount);
+	printf("Here4\n");
 	struct FMidx *index = calculateInterval(transform,seqCount,revTransform,query.length);
+	printf("Here5\n");
 	intervalToFile(index,seqCount,transform,query,revTransform);
-/*    	deleteSuffixArray(m,seqCount,query.length);
-    	deleteInputStruct(query,seqCount);*/
-    	return 0;
+	printf("Here6\n");
+/*  deleteSuffixArray(m,seqCount,query.length);
+	deleteInputStruct(query,seqCount);*/
+	return 0;
 }
