@@ -134,9 +134,7 @@ initializeInputStruct( int seqCount, int *seqLength)
 	query.reverse = (char **) malloc(seqCount * sizeof(char *));
 	for(i = 0; i < seqCount;i++)
 	{
-		printf("sl:%d\n",seqLength[i]);
 		query.length[i] = seqLength[i];
-		printf("ql:%d\n",query.length[i]);
 		if(seqLength[i] > query.maxLength)
 			query.maxLength = seqLength[i];
 		query.name[i] = (char *) malloc(n*(sizeof(char)));
@@ -370,48 +368,21 @@ readFasta(char *fileName, struct input *query)
 	int i = 0;
 	int seqCount = 0;
 	temp2[0] = '\0';
-	printf("t2:%s\nt:%s\n",temp2,temp);
-	printf("C\nmL:%d\n",query->maxLength);
 	FILE *file = fopen(fileName,"r");
 	while(fgets(temp,query->maxLength,file) != NULL)   /*loops through each line of a file*/
 	{
-		printf("D\n");
-		printf("t2:%s\nt:%s\n",temp2,temp);
 		if(temp[0] == '>')      /*if line is a header*/
 		{
 			if(seqCount == 0)
 			{
 				strtok(temp,"\n");
-				printf("E\n");
-				printf("t2:%s\nt:%s\n",temp2,temp);
 				memmove(temp, temp+1, strlen(temp));
-				printf("F\n");
-				printf("t2:%s\nt:%s\n",temp2,temp);
 				strcpy(query->name[i],temp);
-				printf("G\n%s\n",query->name[i]);
-				printf("t2:%s\nt:%s\n",temp2,temp);
 			}
 			else
 			{
-				printf("H\n");
-				printf("cL1:%d\n",strlen(query->sequence[i]));
 				strcpy(query->sequence[i],temp2);
-				printf("cL2:%d\n",strlen(query->sequence[i]));
-				printf("s:%s\n",query->sequence[i]);
-				printf("qL:%d\nLC: \"%c\"\n",query->length[i], query->sequence[i][query->length[i]]);
-				/*
-					Check 
-						-	length memory is declared with
-
-							65262
-
-						-	length store in structure
-
-							465465
-
-				*/
 				strcat(query->sequence[i],"$");
-				printf("cL3:%d\n",strlen(query->sequence[i]));
 				rev = reverse(temp2,strlen(temp2));
 				strcat(rev,"$");
 				strcpy(query->reverse[i],rev);
@@ -427,36 +398,22 @@ readFasta(char *fileName, struct input *query)
 			continue;
 		else    /*if line contains an amino acid sequence*/
 		{
-			printf("D2\n");
 			seqCount++;
 			strtok(temp,"\n"); /*strings read from file have extra \n added by file read*/
-			printf("D3\nt2:%s\nt:%s\n",temp2,temp);
 			strcat(temp2,temp);
-			printf("D4\n");
 			memset(temp,0,strlen(temp));
-			printf("D5\n");
 		}
 	}
-	printf("i:%d\nqL:%d\nt:%s\nq:%s\n",i,query->length[i],temp2,query->sequence[i]);
-	
 	strcpy(query->sequence[i],temp2);
-	printf("HELLO111\n");
 	strcat(query->sequence[i],"$");
-	printf("HELLO\n");
 	rev = reverse(temp2,strlen(temp2));
-	printf("HELLO1\n");
 	strcat(rev,"$");
-	printf("HELLO2\n");
 	strcpy(query->reverse[i],rev);
-	printf("HELLO3\n");
 	memset(rev,0,strlen(rev));
 	memset(temp2,0,strlen(temp2));
 	memset(temp,0,strlen(temp));
-	printf("HELLO\n");
 	fflush(file);
 	fclose(file);	
-	printf("HELLO\n");
-	printf("%s\n%s\n%s\n%s\n%s\n%s\n",query->name[0],query->sequence[0],query->name[1],query->sequence[1],query->name[2],query->sequence[2]);
 }
 
 int 
@@ -730,11 +687,8 @@ handleFileInput(struct input *query,char *fileName)
 {
 	int seqCount = getSeqCount(fileName);
 	int *seqLength = getLength(fileName,seqCount);
-	printf("L:%d\n",seqLength[0]);
 	*query = initializeInputStruct(seqCount,seqLength);
-	printf("A\n");
 	readFasta(fileName, query);
-	printf("B\n");
 	return seqCount;
 }
 
@@ -763,7 +717,6 @@ newSuffixArray(int seqLength)
 {
         struct suffix *m = (struct suffix *) malloc(seqLength * sizeof(struct suffix));
         assert(m != 0);
-		printf("hi\n");
         initializeSuffixArray(m,seqLength);
         return m;
 }
@@ -783,11 +736,8 @@ newSuffixArray(int seqLength)
 struct suffix *
 buildSuffixArray(char *sequence,int length)
 {
-		printf("L:%d\n",length);
     	struct suffix *SA = populateSuffixArray(sequence,length);
-		printf("HereAA\n");
     	mergeSort(0,length-1,SA, length);
-		printf("HereAB\n");
     	return SA;
 }
 
@@ -807,10 +757,8 @@ buildSuffixArray(char *sequence,int length)
 struct suffix *
 populateSuffixArray(char *sequence,int length)
 {
-	printf("L:%d\n",length);
 	struct suffix *SA = newSuffixArray(length);
 	int j;
-	printf("HereAAA\n");
 	for(j = 0; j < length; j++)
 	{		
 		SA[j].pos = j + 1;
@@ -822,7 +770,6 @@ populateSuffixArray(char *sequence,int length)
 			strcpy(SA[j].string,sequence);
 		}
 	}
-	printf("HereAAB\n");
 	return SA;
 }
 
@@ -883,8 +830,8 @@ Merge(int low,int mid, int high, struct suffix *m,int seqLength)
 {
 	int j = 0;
 	int k = low;
-    	int nL= mid-low+1;
-    	int nR= high-mid;
+    int nL= mid-low+1;
+    int nR= high-mid;
 /*	int seqLength = strlen(m[0].string);*/
 	int i = 0;
 	struct suffix *tempL;
@@ -1047,18 +994,15 @@ calculateO(char *sequence,int letterValue,int length)
 	int i;
 	int count = 0;
 	int *value = (int *) malloc(length * sizeof(int)); 
-	printf("s:'%s'\n\n\n",sequence);
 	for(i = 0; i < length; i++)
 	{
 		if(sequence[i] != '$')
 		{
-			printf("%c",sequence[i]);
 			if(baseMap(sequence[i]) == letterValue)
 				count++;
 		}
 		value[i] = count;
 	}
-	printf("\n");
 	return value;
 }
 
@@ -1186,14 +1130,10 @@ calculateTransform(struct input query, int seqCount)
 {
 	int i;
 	struct transform *tempTransform = (struct transform *) malloc(sizeof(struct transform)*seqCount);
-	printf("HereA\n");
 	struct suffix *m;
-	printf("HereB\n");
 	for(i = 0; i < seqCount; i ++)
 	{
-		printf("HereC\nL:%d\n",query.length[i]);
 		m = buildSuffixArray(query.sequence[i],query.length[i]);
-		printf("Here2.%d\n",i);
 		tempTransform[i].string = bwt(m, query.length[i]);
 		tempTransform[i].positions = positions(m, query.length[i]);
 /*		memmove(m,0,query.length[i]);*/
@@ -1227,17 +1167,11 @@ int
 main(int argc, char *argv[])
 {
 	int seqCount = 0;	/*will contain # of sequences, is written by manageInputs()*/
-	printf("Here1\n");
 	struct input query = manageInputs(argc,argv,&seqCount);
-	printf("Here2:\n");
 	struct transform *transform = calculateTransform(query,seqCount);	
-	printf("Here3\n");
 	struct transform *revTransform = calculateReverseTransform(query,seqCount);
-	printf("Here4\n");
 	struct FMidx *index = calculateInterval(transform,seqCount,revTransform,query.length);
-	printf("Here5\n");
 	intervalToFile(index,seqCount,transform,query,revTransform);
-	printf("Here6\n");
 /*  deleteSuffixArray(m,seqCount,query.length);
 	deleteInputStruct(query,seqCount);*/
 	return 0;
